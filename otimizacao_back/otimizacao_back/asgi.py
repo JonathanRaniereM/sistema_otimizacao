@@ -1,5 +1,5 @@
 """
-ASGI config for sistema_recep_back project.
+ASGI config for otimizacao_back project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 import os
 
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sistema_recep_back.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'otimizacao_back.settings')
 
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application

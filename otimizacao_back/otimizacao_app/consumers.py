@@ -89,75 +89,77 @@ class OtimizeConsumer(
         await super().disconnect(close_code)
 
 
-
-    async def insert(self, content):
-        targetComponent = content['targetComponent']
-        try:
-
-            message = {
-                'type': 'insert.update',   
-                'data': 'insert.update',
-                'targetComponent':targetComponent,
-            }
-            await self.channel_layer.group_send(self.room_group_name, message)
-        except Exception as e:
-            logger.error(f"Erro ao processar atualização de cronometro com conteúdo: {content}. Erro: {str(e)}")
-
-    async def insert_update(self, event):
-        await self.send_json({
-            'type': event['type'],
-            'data': event['data'],
-            'targetComponent': event['targetComponent'],
-        })
-        
-    from .optimization import random_method, gradient_method, newton_method, quasi_newton_method, barrier_method
    
-    async def perform_optimization(self, content):
+    import logging
 
-        targetComponent = content['targetComponent']
+    logger = logging.getLogger(__name__)
+
+    async def perform_optimization(self, content):
+        from .optimization import random_method, newton_method, quasi_newton_method, barrier_method
+        
         method = content['method']
         data = content['data']
-            
+        logger.info(f"Iniciando otimização com método: {method}, dados: {data}")
+        
+        if method == 'random':
+            logger.info("Entrando no método 'random'")
+            result = await database_sync_to_async(random_method)(data)
+            logger.info("Saindo do método 'random'")
+        elif method == 'newton':
+            result = await database_sync_to_async(newton_method)(data)
+        elif method == 'quasi_newton':
+            result = await database_sync_to_async(quasi_newton_method)(data)
+        elif method == 'barrier':
+            result = await database_sync_to_async(barrier_method)(data)
+        else:
+            result = {'error': 'Método de otimização desconhecido'}
+            logger.error(f"Método de otimização desconhecido: {method}")
+        
         try:
-                
-            if method == 'random':
-                result = await self.run_optimization(random_method, data)
-            elif method == 'gradient':
-                result = await self.run_optimization(gradient_method, data)
-            elif method == 'newton':
-                result = await self.run_optimization(newton_method, data)
-            elif method == 'quasi_newton':
-                result = await self.run_optimization(quasi_newton_method, data)
-            elif method == 'barrier':
-                result = await self.run_optimization(barrier_method, data)
-            else:
-                result = {'error': 'Método de otimização desconhecido'}
-
             message = {
+                'type': "perform_optimization", 
                 'method': method,   
                 'data': data,
-                'targetComponent':targetComponent,
-                'result':result,
+                'result': result,
             }
             await self.channel_layer.group_send(self.room_group_name, message)
         except Exception as e:
-            logger.error(f"Erro ao processar atualização de cronometro com conteúdo: {content}. Erro: {str(e)}")
-            
+            logger.error(f"Erro ao processar atualização de cronômetro com conteúdo: {content}. Erro: {str(e)}")
 
            
 
    
-    async def perform_optimization(self, event):
+    async def perform_optimization_update(self, event):
         await self.send_json({
+            'type': event['type'],
             'method': event['method'],
             'data': event['data'],
-            'targetComponent': event['targetComponent'],
             'result': event['result'],
         })
-    @database_sync_to_async
-    def run_optimization(self, optimization_function, data):
-        # Execute a função de otimização específica e retorne o resultado
-        return optimization_function(data)
+        
+        
+        
+    async def delete(self, content):
+  
+        try:
+
+            message = {
+                'type': 'delete.update',   
+                'data': 'delete.update',
+    
+            }
+            await self.channel_layer.group_send(self.room_group_name, message)
+        except Exception as e:
+            logger.error(f"Erro ao processar atualização de cronometro com conteúdo: {content}. Erro: {str(e)}")
+
+    async def delete_update(self, event):
+        await self.send_json({
+            'type': event['type'],
+            'data': event['data'],
+       
+        })
+        
+
 
     # Adicione este método
     async def send_json(self, content, close=False):
@@ -173,14 +175,14 @@ class OtimizeConsumer(
 
     async def receive_json(self, content, **kwargs):
         action = content.get('action')
-        if action == 'insert':
-            await self.insert(content)
-        elif action == 'optimize':
+        if action == 'optimize':
             await self.perform_optimization(content)
-
+        elif action == 'delete':
+            await self.delete(content)
 
         else:
             await super().receive_json(content, **kwargs)
+            
 
 
 
