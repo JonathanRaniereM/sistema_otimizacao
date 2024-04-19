@@ -56,12 +56,13 @@ def getStatusCodeString(code):
             return '(For applications)'
     return specificStatusCodeMappings.get(code, '(Unknown)')
 
-class OtimizeConsumer(
-    GenericAsyncAPIConsumer
-):   
-    
-    
+import logging
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
+logger = logging.getLogger(__name__)
+
+class OtimizeConsumer(AsyncJsonWebsocketConsumer):
+    
     async def connect(self):
         logger.info("Conexão estabelecida.")
         print("Método connect chamado!")
@@ -88,47 +89,40 @@ class OtimizeConsumer(
         )
         await super().disconnect(close_code)
 
-
-   
-    import logging
-
-    logger = logging.getLogger(__name__)
+    async def receive_json(self, content, **kwargs):
+        action = content.get('action')
+        logger.info(f"Recebido: {content}")
+        if action == 'optimize':
+            await self.perform_optimization(content)
+        else:
+            logger.warning(f"Ação desconhecida recebida: {action}")
 
     async def perform_optimization(self, content):
-        from .optimization import random_method, newton_method, quasi_newton_method, barrier_method
-        
+        type = content['type']
         method = content['method']
         data = content['data']
         logger.info(f"Iniciando otimização com método: {method}, dados: {data}")
         
+        from .optimization import method_random_and_method_gradient
+
         if method == 'random':
-            logger.info("Entrando no método 'random'")
-            result = await database_sync_to_async(random_method)(data)
-            logger.info("Saindo do método 'random'")
-        elif method == 'newton':
-            result = await database_sync_to_async(newton_method)(data)
-        elif method == 'quasi_newton':
-            result = await database_sync_to_async(quasi_newton_method)(data)
-        elif method == 'barrier':
-            result = await database_sync_to_async(barrier_method)(data)
+            result = await database_sync_to_async(method_random_and_method_gradient)(data)
+      
         else:
             result = {'error': 'Método de otimização desconhecido'}
             logger.error(f"Método de otimização desconhecido: {method}")
+
+        response = {
+            'type': type,
+            'method': method,
+            'data': data,
+            'result': result
+        }
         
-        try:
-            message = {
-                'type': "perform_optimization", 
-                'method': method,   
-                'data': data,
-                'result': result,
-            }
-            await self.channel_layer.group_send(self.room_group_name, message)
-        except Exception as e:
-            logger.error(f"Erro ao processar atualização de cronômetro com conteúdo: {content}. Erro: {str(e)}")
+        logger.info(f"Enviando resultado da otimização: {response}")
+        await self.send_json(response)
 
-           
 
-   
     async def perform_optimization_update(self, event):
         await self.send_json({
             'type': event['type'],
@@ -136,53 +130,6 @@ class OtimizeConsumer(
             'data': event['data'],
             'result': event['result'],
         })
-        
-        
-        
-    async def delete(self, content):
-  
-        try:
-
-            message = {
-                'type': 'delete.update',   
-                'data': 'delete.update',
-    
-            }
-            await self.channel_layer.group_send(self.room_group_name, message)
-        except Exception as e:
-            logger.error(f"Erro ao processar atualização de cronometro com conteúdo: {content}. Erro: {str(e)}")
-
-    async def delete_update(self, event):
-        await self.send_json({
-            'type': event['type'],
-            'data': event['data'],
-       
-        })
-        
-
-
-    # Adicione este método
     async def send_json(self, content, close=False):
-        try:
-            logger.info(f"Preparando para enviar mensagem para o grupo {self.room_group_name}. Mensagem: {content}")
-            await super().send_json(content, close)
-            logger.info(f"Mensagem enviada com sucesso para o grupo {self.room_group_name}. ")
-        except Exception as e:
-            logger.error(f"Erro ao enviar mensagem para o grupo {self.room_group_name}. . Erro: {str(e)}")
-
-
-
-
-    async def receive_json(self, content, **kwargs):
-        action = content.get('action')
-        if action == 'optimize':
-            await self.perform_optimization(content)
-        elif action == 'delete':
-            await self.delete(content)
-
-        else:
-            await super().receive_json(content, **kwargs)
-            
-
-
-
+        logger.info(f"Enviando mensagem: {content}")
+        await super().send_json(content, close=close)

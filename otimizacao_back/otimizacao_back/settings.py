@@ -119,12 +119,12 @@ MIDDLEWARE = [
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 
-ALLOWED_HOSTS = ['192.168.254.82', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['10.100.0.23', 'localhost', '127.0.0.1']
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://192.168.254.82:3000",  # O frontend React está rodando aqui
-    "http://192.168.254.82:8000",  # O backend Django está rodando aqui
+    "http://10.100.0.23:3000",  # O frontend React está rodando aqui
+    "http://10.100.0.23:8000",  # O backend Django está rodando aqui
 ]
 CORS_ALLOW_METHODS = [
     "DELETE",
@@ -181,7 +181,7 @@ DATABASES = {
         'NAME': 'sistema_cadastro',
         'USER': 'root',
         'PASSWORD': '123456',
-        'HOST': '192.168.254.82',
+        'HOST': '10.100.0.23',
         'PORT': '3306',
     }
 }
@@ -217,6 +217,38 @@ TIME_ZONE = 'America/Argentina/Buenos_Aires'
 USE_I18N = True
 
 USE_TZ = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'detailed',
+        },
+    },
+    'formatters': {
+        'detailed': {
+            'format': '%(asctime)s %(levelname)s %(module)s %(message)s'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        '': {  # 'catch all' logger
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
 
 
 # Static files (CSS, JavaScript, Images)
