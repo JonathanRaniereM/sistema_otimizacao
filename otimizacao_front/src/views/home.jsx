@@ -13,10 +13,11 @@ function FunctionInput() {
   const [GradientTrajectory, setPlotsDataGradientTrajectory] = useState(null); 
   const [RandomTrajectory, setPlotsDataRandomTrajectory] = useState(null); 
   const [ConvergenceCurve, setPlotsDataConvergenceCurve] = useState(null); 
+  const [toggleActive, setToggleActive] = useState(false);
   const [ws, setWs] = useState(null);
 
   useEffect(() => {
-    const newWs = new WebSocket('ws://10.100.0.23:8000/ws/manage_otimize/');
+    const newWs = new WebSocket('ws://192.168.254.82:8000/ws/manage_otimize/');
 
     newWs.onopen = () => {
       console.log('WebSocket Connected');
@@ -26,6 +27,28 @@ function FunctionInput() {
     newWs.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === 'perform_optimization' && message.result) {
+        console.log("MENSAGEM RECEBIDA", message);
+        try {
+          const resultData = JSON.parse(message.result);
+          if (resultData.function_3d && resultData.function_3d.x && resultData.function_3d.y && resultData.function_3d.z) {
+            setPlotsDataFunction3D(resultData.function_3d);
+          
+            setPlotsDataConvergenceCurve(resultData.convergence_curve);
+            setPlotsDataFeasibilityRegion(resultData.feasibility_region);
+            setPlotsDataRandomTrajectory(resultData.random_trajectory);
+            setPlotsDataGradientTrajectory(resultData.gradient_trajectory);
+            setPlotsDataPointOptimal(resultData.optimization.optimal_point)
+
+            console.log("TRAJETORIA RANDOM",resultData.random_trajectory)
+            console.log("TRAJETORIA GRADIENT",resultData.gradient_trajectory)
+       
+          } else {
+            console.error('Dados de plotagem incompletos:', resultData);
+          }
+        } catch (err) {
+          console.error('Falha ao parsear o resultado:', err);
+        }
+      }else if (message.type === 'perform_optimization_all' && message.result) {
         console.log("MENSAGEM RECEBIDA", message);
         try {
           const resultData = JSON.parse(message.result);
@@ -66,9 +89,9 @@ function FunctionInput() {
     try {
       const parsedBounds = JSON.parse(bounds);
       const message = {
-        type: "perform_optimization",
+        type: toggleActive ? "perform_optimization_all" : "perform_optimization",
         method: 'random',
-        action: "optimize",
+        action: toggleActive ? "optimize_all" : "optimize",
         data: {
           objective_function_str: functionText,
           bounds: parsedBounds,
@@ -183,6 +206,15 @@ function FunctionInput() {
           onChange={(e) => setMaxIter(e.target.value)}
           placeholder="Número máximo de iterações, ex: 100"
         />
+
+        <label>
+        Optimize All:
+        <input
+            type="checkbox"
+            checked={toggleActive}
+            onChange={() => setToggleActive(!toggleActive)}
+        />
+        </label>
         <div>
           <button type="submit">Enviar Dados</button>
         </div>

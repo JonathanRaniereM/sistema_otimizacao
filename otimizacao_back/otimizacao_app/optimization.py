@@ -20,17 +20,6 @@ def evaluate_on_grid(expr_str, variables, x_range, y_range):
     Z = f(X, Y)
     return X, Y, Z
 
-def generate_contour_data(X, Y, Z, levels=50):
-    plt.figure()
-    CS = plt.contour(X, Y, Z, levels=levels, colors='black')
-    contour_data = []
-    for i, collection in enumerate(CS.collections):
-        for path in collection.get_paths():
-            v = CS.levels[i]
-            xy = path.vertices
-            contour_data.append({'x': xy[:, 0].tolist(), 'y': xy[:, 1].tolist(), 'level': v})
-    plt.close()
-    return contour_data
 
 def gradient_descent_method(objective_function, gradient_function, x0, max_iter, learning_rate=0.01):
     path = [x0]
@@ -53,7 +42,6 @@ def method_random_and_method_gradient(data):
     y_range = np.linspace(bounds[1][0], bounds[1][1], 100)
     X, Y, Z = evaluate_on_grid(objective_function_str, variables, x_range, y_range)
 
-    contour_levels = generate_contour_data(X, Y, Z)
 
     x0 = [(b[0] + b[1]) / 2 for b in bounds]
     objective_function = compile_sympy_expression(objective_function_str, variables)
@@ -94,7 +82,6 @@ def method_random_and_method_gradient(data):
     
     result_data = {
         "function_3d": {"x": x_range.tolist(), "y": y_range.tolist(), "z": Z.tolist()},
-        "contour_levels": contour_levels,
         "gradient_trajectory": {"x": gradient_results["x"], "y": gradient_results["y"], "values": gradient_results["values"]},
         "random_trajectory": {"x": random_results["x"], "y": random_results["y"], "values": random_results["values"]},
         "convergence_curve": [convergence_curve_random, convergence_curve_gradient],

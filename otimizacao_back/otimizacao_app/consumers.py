@@ -94,6 +94,8 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
         logger.info(f"Recebido: {content}")
         if action == 'optimize':
             await self.perform_optimization(content)
+        if action == 'optimize_all':
+            await self.perform_optimization_all(content)
         else:
             logger.warning(f"Ação desconhecida recebida: {action}")
 
@@ -123,13 +125,48 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json(response)
 
 
+    async def perform_optimization_all(self, content):
+        type = content['type']
+        method = content['method']
+        data = content['data']
+        logger.info(f"Iniciando otimização com método: {method}, dados: {data}")
+
+        from .optimization import method_random_and_method_gradient
+
+        if method == 'random':
+            result = await database_sync_to_async(method_random_and_method_gradient)(data)
+        else:
+            result = {'error': 'Método de otimização desconhecido'}
+            logger.error(f"Método de otimização desconhecido: {method}")
+
+        response = {
+            'type': type,
+            'method': method,
+            'data': data,
+            'result': result
+        }
+
+        logger.info(f"Enviando resultado da otimização para todos no grupo: {self.room_group_name}")
+        # Enviar a resposta para todos no grupo
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'perform_optimization_update',  # Este é o método handler no consumer que vai tratar a mensagem
+                'message': response
+            }
+        )
+
+
+
+        
     async def perform_optimization_update(self, event):
-        await self.send_json({
-            'type': event['type'],
-            'method': event['method'],
-            'data': event['data'],
-            'result': event['result'],
-        })
+        # Extrai a mensagem de 'event' que foi enviada pelo 'group_send'
+        message = event['message']
+        logger.info(f"Repassando mensagem ao grupo: {message}")
+        await self.send_json(message)
+
+        
+        
     async def send_json(self, content, close=False):
         logger.info(f"Enviando mensagem: {content}")
         await super().send_json(content, close=close)
