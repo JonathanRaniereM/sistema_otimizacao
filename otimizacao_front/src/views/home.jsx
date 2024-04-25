@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Plot from 'react-plotly.js';
-
+import LogoImage from './assets/images/LOGO OPTI (1).svg';
+import { faChevronUp, faChevronDown} from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import './assets/styles/home.css';
 
 function FunctionInput() {
   const [functionText, setFunctionText] = useState('');
@@ -15,9 +18,10 @@ function FunctionInput() {
   const [ConvergenceCurve, setPlotsDataConvergenceCurve] = useState(null); 
   const [toggleActive, setToggleActive] = useState(false);
   const [ws, setWs] = useState(null);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   useEffect(() => {
-    const newWs = new WebSocket('ws://192.168.254.82:8000/ws/manage_otimize/');
+    const newWs = new WebSocket('ws://10.100.0.23:8000/ws/manage_otimize/');
 
     newWs.onopen = () => {
       console.log('WebSocket Connected');
@@ -110,13 +114,34 @@ function FunctionInput() {
     }
   };
 
+  const plotLayoutObjetive3D = {
+    width: 750, // Define a largura do gráfico
+    height: 400, // Define a altura do gráfico
+    margin: { t: 30, r: 50, b: 40, l: 60 }, // Margens ajustadas
+    plot_bgcolor: "rgba(0,0,0,0)",
+    paper_bgcolor: "rgba(0,0,0,0)",
+  };
+
+  const plotLayoutCountorsLevels = {
+    width: 400, // Define a largura do gráfico
+    height: 250, // Define a altura do gráfico
+    margin: { t: 30, r: 20, b: 40, l: 60 }, // Margens ajustadas
+    plot_bgcolor: "rgba(0,0,0,0)",
+    paper_bgcolor: "rgba(0,0,0,0)",
+  };
+
+
   const plotLayout = {
+    width: 400, // Define a largura do gráfico
+    height: 250, // Define a altura do gráfico
     margin: { t: 30 },
     plot_bgcolor: "rgba(0,0,0,0)",
     paper_bgcolor: "rgba(0,0,0,0)",
   };
 
   const plotLayoutConvergence = {
+    width: 400, // Define a largura do gráfico
+    height: 250, // Define a altura do gráfico
     title: {
       text: 'Curva de Convergência',
       font: {
@@ -159,6 +184,8 @@ function FunctionInput() {
 
   const plotLayoutSolutionTrajectory = {
     title: 'Trajetória da Solução',
+    width: 550, // Define a largura do gráfico
+    height: 400, // Define a altura do gráfico
     margin: { t: 50, r: 20, b: 40, l: 60 }, // Margens ajustadas
     plot_bgcolor: "rgba(255,255,255,1)", // Fundo branco
     paper_bgcolor: "rgba(255,255,255,1)",
@@ -183,176 +210,193 @@ function FunctionInput() {
   };
 
 
+  function toggleMenu() {
+    setIsMenuVisible(!isMenuVisible);
+}
+
+function submitForm(event) {
+    handleSubmit(event);
+}
+
+function shareSampling(event) {
+    setToggleActive(!toggleActive);
+    handleSubmit(event);
+}
+
+
   return (
-    <div className="function-input-container">
-      <h2>Adicione sua função</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={functionText}
-          onChange={(e) => setFunctionText(e.target.value)}
-          placeholder="Função objetivo, ex: x^2 + 3*x + 2"
-        />
+    <div className="tela_home">
+   <div className="header-home">
+    <div className="logo-container-home">
+        <img src={LogoImage} alt="Logo" style={{ width: '100px', height: '100px', marginLeft: '10%'}} />
+    </div>
+    
+    <div className="form-container">
+        <form onSubmit={handleSubmit}>
+            <input type="text" value={functionText} onChange={(e) => setFunctionText(e.target.value)} placeholder="Função objetivo, ex: x^2 + 3*x + 2" />
+            <input type="text" value={bounds} onChange={(e) => setBounds(e.target.value)} placeholder="Limites, ex: [[-10, 10], [-10, 10]]" />
+            <input type="text" value={maxIter} onChange={(e) => setMaxIter(e.target.value)} placeholder="Número máximo de iterações, ex: 100" />
+        
+            <div className="menu-icon-container">
+                <FontAwesomeIcon icon={isMenuVisible ? faChevronUp : faChevronDown} onClick={toggleMenu} style={{ cursor: 'pointer', position: 'relative' }} />
+                <div id="context-menu" className="context-menu" style={{ display: isMenuVisible ? 'block' : 'none' }}>
+                    <button type="submit" onClick={submitForm}>Enviar Dados</button>
+                    <button type="submit" onClick={shareSampling}>Compartilhar Amostragem</button>
+                </div>
+            </div>
+        </form>
+    </div>
+  </div>
 
-        <input
-          type="text"
-          value={bounds}
-          onChange={(e) => setBounds(e.target.value)}
-          placeholder="Limites, ex: [[-10, 10], [-10, 10]]"
-        />
-        <input
-          type="text"
-          value={maxIter}
-          onChange={(e) => setMaxIter(e.target.value)}
-          placeholder="Número máximo de iterações, ex: 100"
-        />
+  <div className='content-home'>
 
-        <label>
-        Optimize All:
-        <input
-            type="checkbox"
-            checked={toggleActive}
-            onChange={() => setToggleActive(!toggleActive)}
-        />
-        </label>
-        <div>
-          <button type="submit">Enviar Dados</button>
+  {Function3D  && (
+        <div className='card card_obtjetive_3d'>
+          <Plot
+            data={[{
+              x: Function3D.x,
+              y: Function3D.y,
+              z: Function3D.z,
+              type: 'surface',
+              colorscale: 'Viridis'
+            }]}
+            layout={{ ...plotLayoutObjetive3D, title: 'Função Objetivo 3D' }}
+          />
+       </div>
+         )}
+
+       <div className='card card_solution_trajectory'>
+          {GradientTrajectory && RandomTrajectory && PointOptimal && (
+            <Plot
+              data={[
+                // Curvas de nível como plano de fundo
+                {
+                  x: Function3D.x,
+                  y: Function3D.y,
+                  z: Function3D.z,
+                  type: 'contour',
+                  colorscale: 'Greys',
+                  showscale: false,
+                  contours: {
+                    coloring: 'lines',
+                  },
+                },
+                // Trajetória do método gradiente
+                {
+                  x: GradientTrajectory.x,
+                  y: GradientTrajectory.y,
+                  mode: 'lines+markers',
+                  type: 'scatter',
+                  name: `Gradiente - Final: (${GradientTrajectory.x.slice(-1)[0]}, ${GradientTrajectory.y.slice(-1)[0]})`,
+                  line: { color: 'blue' },
+                  marker: { size: 7 }
+                },
+                // Trajetória do método aleatório
+                {
+                  x: RandomTrajectory.x,
+                  y: RandomTrajectory.y,
+                  mode: 'lines+markers',
+                  type: 'scatter',
+                  name: `Aleatório - Final: (${RandomTrajectory.x.slice(-1)[0]}, ${RandomTrajectory.y.slice(-1)[0]})`,
+                  line: { color: 'red' },
+                  marker: { size: 7 }
+                },
+                // Ponto ótimo
+                {
+                  x: [PointOptimal.x],
+                  y: [PointOptimal.y],
+                  mode: 'markers',
+                  type: 'scatter',
+                  name: `Ótimo - (${PointOptimal.x.toFixed(2)}, ${PointOptimal.y.toFixed(2)}) Valor: ${PointOptimal.value}`,
+                  marker: {
+                    color: 'green',
+                    size: 10,
+                    symbol: 'star'
+                  }
+                }
+              ]}
+              layout={{
+                ...plotLayoutSolutionTrajectory,
+                annotations: [
+                  {
+                    x: PointOptimal.x,
+                    y: PointOptimal.y,
+                    text: 'Ponto ótimo',
+                    showarrow: true,
+                    arrowhead: 2,
+                    ax: 0,
+                    ay: -30
+                  }
+                ]
+              }}
+            />
+          )}
+          </div>
+     
+          {Function3D  && (
+        <div className='card card_countors_levels'>
+          <Plot
+              data={[{
+                x: Function3D.x, // Utiliza os mesmos eixos x e y do gráfico 3D
+                y: Function3D.y,
+                z: Function3D.z, // Os valores de z devem ser uma matriz 2D de valores da função objetivo
+                type: 'heatmap',
+                colorscale: 'Jet',
+                showscale: true // Mostra a barra de cores
+              }]}
+              layout={{ ...plotLayoutCountorsLevels, title: 'Curvas de Nível da Função Objetivo em 2D' }}
+            />
         </div>
-      </form>
-      {Function3D && Function3D.x && Function3D.y && Function3D.z && ( // Verificação adicional para garantir que todas as propriedades estão disponíveis
-        <div className="plot-area">
-      <Plot
-        data={[{
-          x: Function3D.x,
-          y: Function3D.y,
-          z: Function3D.z,
-          type: 'surface',
-          colorscale: 'Viridis'
-        }]}
-        layout={{ ...plotLayout, title: '3D Function Surface' }}
-      />
-      {/* Gráfico da função objetivo em 2D (Curvas de Nível) */}
-    <Plot
-      data={[{
-        x: Function3D.x, // Utiliza os mesmos eixos x e y do gráfico 3D
-        y: Function3D.y,
-        z: Function3D.z, // Os valores de z devem ser uma matriz 2D de valores da função objetivo
-        type: 'heatmap',
-        colorscale: 'Jet',
-        showscale: true // Mostra a barra de cores
-      }]}
-      layout={{ ...plotLayout, title: 'Curvas de Nível da Função Objetivo em 2D' }}
-    />
-<div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-around', marginTop: '20px' }}>
+          )}
 
-{GradientTrajectory && RandomTrajectory && PointOptimal && (
-  <Plot
-    data={[
-      // Curvas de nível como plano de fundo
-      {
-        x: Function3D.x,
-        y: Function3D.y,
-        z: Function3D.z,
-        type: 'contour',
-        colorscale: 'Greys',
-        showscale: false,
-        contours: {
-          coloring: 'lines',
-        },
-      },
-      // Trajetória do método gradiente
-      {
-        x: GradientTrajectory.x,
-        y: GradientTrajectory.y,
-        mode: 'lines+markers',
-        type: 'scatter',
-        name: `Gradiente - Final: (${GradientTrajectory.x.slice(-1)[0]}, ${GradientTrajectory.y.slice(-1)[0]})`,
-        line: { color: 'blue' },
-        marker: { size: 7 }
-      },
-      // Trajetória do método aleatório
-      {
-        x: RandomTrajectory.x,
-        y: RandomTrajectory.y,
-        mode: 'lines+markers',
-        type: 'scatter',
-        name: `Aleatório - Final: (${RandomTrajectory.x.slice(-1)[0]}, ${RandomTrajectory.y.slice(-1)[0]})`,
-        line: { color: 'red' },
-        marker: { size: 7 }
-      },
-      // Ponto ótimo
-      {
-        x: [PointOptimal.x],
-        y: [PointOptimal.y],
-        mode: 'markers',
-        type: 'scatter',
-        name: `Ótimo - (${PointOptimal.x.toFixed(2)}, ${PointOptimal.y.toFixed(2)}) Valor: ${PointOptimal.value}`,
-        marker: {
-          color: 'green',
-          size: 10,
-          symbol: 'star'
-        }
-      }
-    ]}
-    layout={{
-      ...plotLayoutSolutionTrajectory,
-      annotations: [
-        {
-          x: PointOptimal.x,
-          y: PointOptimal.y,
-          text: 'Ponto ótimo',
-          showarrow: true,
-          arrowhead: 2,
-          ax: 0,
-          ay: -30
-        }
-      ]
-    }}
-  />
-)}
+          <div className='card card_convergence_curve'>
+            {ConvergenceCurve && (
+              <Plot
+                data={ConvergenceCurve.map(curve => ({
+                  x: curve.iter,
+                  y: curve.values,
+                  type: 'scatter',
+                  mode: 'lines+markers',
+                  name: curve.type === 'random' ? 'Random' : 'Gradient',
+                  line: {
+                    color: curve.type === 'random' ? 'red' : 'blue',
+                    width: 2,
+                  },
+                  marker: {
+                    size: 6,
+                  },
+                }))}
+                layout={plotLayoutConvergence}
+                config={{
+                  responsive: true,
+                  displayModeBar: true,
+                }}
+              />
+            )}
+          </div>
+
+          {FeasibilityRegion  && (
+          <div className='card card_feasibility_region'>
+              <Plot
+                data={[{
+                  z: FeasibilityRegion,
+                  x: Function3D.x,
+                  y: Function3D.y,
+                  type: 'heatmap',
+                  colorscale: [['0', 'white'], ['1', 'blue']], // Custom colorscale
+                  showscale: false // Hide color scale
+                }]}
+                layout={{ ...plotLayout, title: 'Feasibility Region' }}
+              />
+          </div>
+        )}
+     
+   
 
 
-{ConvergenceCurve && (
-  <Plot
-    data={ConvergenceCurve.map(curve => ({
-      x: curve.iter,
-      y: curve.values,
-      type: 'scatter',
-      mode: 'lines+markers',
-      name: curve.type === 'random' ? 'Random' : 'Gradient',
-      line: {
-        color: curve.type === 'random' ? 'red' : 'blue',
-        width: 2,
-      },
-      marker: {
-        size: 6,
-      },
-    }))}
-    layout={plotLayoutConvergence}
-    config={{
-      responsive: true,
-      displayModeBar: true,
-    }}
-  />
-)}
-
-
-
-        <Plot
-          data={[{
-            z: FeasibilityRegion,
-            x: Function3D.x,
-            y: Function3D.y,
-            type: 'heatmap',
-            colorscale: [['0', 'white'], ['1', 'blue']], // Custom colorscale
-            showscale: false // Hide color scale
-          }]}
-          layout={{ ...plotLayout, title: 'Feasibility Region' }}
-        />
-      </div>
+</div>
     </div>
-  )}
-    </div>
+
   );
 }
 

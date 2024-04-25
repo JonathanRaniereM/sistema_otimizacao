@@ -156,8 +156,6 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
-
-
         
     async def perform_optimization_update(self, event):
         # Extrai a mensagem de 'event' que foi enviada pelo 'group_send'
