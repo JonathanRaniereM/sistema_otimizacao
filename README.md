@@ -1,6 +1,6 @@
-# Sistema Otimização não Linear
+# Sistema Otimização Não Linear
 
-<img width="800" src="https://raw.githubusercontent.com/JonathanRaniereM/sistema_otimizacao/main/otimizacao_front/src/views/assets/images/otimizacao_demonstrativo.gif">
+<img width="600" src="https://raw.githubusercontent.com/JonathanRaniereM/sistema_otimizacao/main/otimizacao_front/src/views/assets/images/otimizacao_demonstrativo.gif">
 
 ## Sobre o Projeto
 
