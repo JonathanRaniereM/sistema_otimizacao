@@ -21,7 +21,7 @@ function FunctionInput() {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   useEffect(() => {
-    const newWs = new WebSocket('ws://10.100.0.23:8000/ws/manage_otimize/');
+    const newWs = new WebSocket('ws://192.168.254.82:8000/ws/manage_otimize/');
 
     newWs.onopen = () => {
       console.log('WebSocket Connected');
@@ -31,12 +31,11 @@ function FunctionInput() {
     newWs.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === 'perform_optimization' && message.result) {
-        console.log("MENSAGEM RECEBIDA", message);
+        console.log("COORDENADAS RECEBIDAS", message);
         try {
           const resultData = JSON.parse(message.result);
           if (resultData.function_3d && resultData.function_3d.x && resultData.function_3d.y && resultData.function_3d.z) {
             setPlotsDataFunction3D(resultData.function_3d);
-          
             setPlotsDataConvergenceCurve(resultData.convergence_curve);
             setPlotsDataFeasibilityRegion(resultData.feasibility_region);
             setPlotsDataRandomTrajectory(resultData.random_trajectory);
@@ -53,7 +52,7 @@ function FunctionInput() {
           console.error('Falha ao parsear o resultado:', err);
         }
       }else if (message.type === 'perform_optimization_all' && message.result) {
-        console.log("MENSAGEM RECEBIDA", message);
+        console.log("COORDENADAS RECEBIDAS", message);
         try {
           const resultData = JSON.parse(message.result);
           if (resultData.function_3d && resultData.function_3d.x && resultData.function_3d.y && resultData.function_3d.z) {
@@ -65,8 +64,7 @@ function FunctionInput() {
             setPlotsDataGradientTrajectory(resultData.gradient_trajectory);
             setPlotsDataPointOptimal(resultData.optimization.optimal_point)
 
-            console.log("TRAJETORIA RANDOM",resultData.random_trajectory)
-            console.log("TRAJETORIA GRADIENT",resultData.gradient_trajectory)
+   
        
           } else {
             console.error('Dados de plotagem incompletos:', resultData);
