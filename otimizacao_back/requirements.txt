@@ -1,0 +1,12 @@
+django
+daphne
+django-cors-headers
+djoser
+django-filter
+channels
+channels_redis
+mysqlclient
+djangochannelsrestframework
+python-dotenv
+numpy
+sympy

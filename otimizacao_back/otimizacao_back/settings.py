@@ -13,6 +13,16 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+
+load_dotenv()
+
+IP_ADDRESS = os.getenv('IP_ADDRESS')
+MYSQL_HOST = os.getenv('MYSQL_HOST')
+REDIS_HOST = os.getenv('REDIS_HOST')
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +37,7 @@ SECRET_KEY = 'django-insecure-#n_l#2g@u$)@p949z$xprfvu!h-=)nlfh3&2r72)cu-20)!muz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [IP_ADDRESS]
 
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
@@ -62,7 +72,8 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            "hosts": [(REDIS_HOST, 6379)],
+            # "hosts": [('127.0.0.1', 6379)],
         },
     },
 }
@@ -72,7 +83,7 @@ CHANNEL_LAYERS = {
 
 
 REST_FRAMEWORK = {
-    
+
     'NON_FIELD_ERRORS_KEY': 'error',
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
     'TEST_REQUEST_RENDERER_CLASSES': [
@@ -181,7 +192,7 @@ DATABASES = {
         'NAME': 'sistema_cadastro',
         'USER': 'root',
         'PASSWORD': '123456',
-        'HOST': '192.168.254.82',
+        'HOST': MYSQL_HOST,
         'PORT': '3306',
     }
 }

@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: sistema_cadastro
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - '3306:3306'
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - '6379:6379'
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+      - redis
