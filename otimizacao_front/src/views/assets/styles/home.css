@@ -1,137 +1,134 @@
 .header-home {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #ffffff; 
-    padding: 0px;
-    color: #333;
-    font-family: 'Poppins', sans-serif;
-    box-shadow: inset 0px -5px 10px -5px rgba(0.5, 0.5, 0.5, 0.5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  padding: 0px;
+  color: #333;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: inset 0px -5px 10px -5px rgba(0.5, 0.5, 0.5, 0.5);
 }
 
 .logo-container-home {
-    flex: 0 1 auto;
+  flex: 0 1 auto;
 }
 
 .form-container {
-    display: flex;
-    align-items: center;
-    justify-content: center !important;
-    flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center !important;
+  flex: 1;
 }
 
 .form-container input {
-    margin: 5px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    transition: border 0.3s ease-in-out;
+  margin: 5px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  transition: border 0.3s ease-in-out;
 }
 
 .form-container input:focus {
-    border-color: #333;
+  border-color: #333;
 }
 
 .menu-icon-container {
-    position: relative;
-    display: inline-block;
+  position: relative;
+  display: inline-block;
 }
 
 .context-menu {
-    position: absolute;
-    top: 100%;  /* Posiciona o menu logo abaixo do ícone */
-    left: -50%; /* Desloca para a esquerda para alinhar visualmente como um submenu */
-    background-color: white;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    z-index: 1000;
-    width: 200px; /* Largura fixa para o menu */
+  position: absolute;
+  top: 100%; /* Posiciona o menu logo abaixo do ícone */
+  left: -50%; /* Desloca para a esquerda para alinhar visualmente como um submenu */
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  z-index: 1000;
+  width: 200px; /* Largura fixa para o menu */
 }
 
 .context-menu button {
-    display: block;
-    background-color: transparent;
-    border: none;
-    color: #333;
-    padding: 10px;
-    cursor: pointer;
-    width: 100%;
-    text-align: left;
+  display: block;
+  background-color: transparent;
+  border: none;
+  color: #333;
+  padding: 10px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
 }
 
 .context-menu button:hover {
-    background-color: #f0f0f0;
+  background-color: #f0f0f0;
 }
 
-
 .content-home {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    background-image: linear-gradient(
-        180deg,
-        hsl(240deg 25% 98%) 0%,
-        hsl(270deg 25% 98%) 4%,
-        hsl(270deg 33% 99%) 8%,
-        hsl(300deg 33% 99%) 13%,
-        hsl(300deg 20% 99%) 17%,
-        hsl(330deg 50% 99%) 21%,
-        hsl(0deg 33% 99%) 25%,
-        hsl(0deg 50% 99%) 29%,
-        hsl(0deg 50% 99%) 33%,
-        hsl(0deg 33% 99%) 37%,
-        hsl(0deg 43% 99%) 42%,
-        hsl(0deg 43% 99%) 46%,
-        hsl(0deg 50% 98%) 50%,
-        hsl(0deg 38% 97%) 54%,
-        hsl(0deg 33% 96%) 58%,
-        hsl(0deg 27% 96%) 63%,
-        hsl(0deg 19% 95%) 67%,
-        hsl(0deg 12% 94%) 71%,
-        hsl(0deg 3% 93%) 75%,
-        hsl(0deg 2% 87%) 79%,
-        hsl(0deg 2% 82%) 83%,
-        hsl(0deg 2% 76%) 87%,
-        hsl(0deg 1% 71%) 92%,
-        hsl(0deg 1% 66%) 96%,
-        hsl(0deg 0% 60%) 100%
-    );
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  /* background-image: linear-gradient(
+    180deg,
+    hsl(240deg 25% 98%) 0%,
+    hsl(270deg 25% 98%) 4%,
+    hsl(270deg 33% 99%) 8%,
+    hsl(300deg 33% 99%) 13%,
+    hsl(300deg 20% 99%) 17%,
+    hsl(330deg 50% 99%) 21%,
+    hsl(0deg 33% 99%) 25%,
+    hsl(0deg 50% 99%) 29%,
+    hsl(0deg 50% 99%) 33%,
+    hsl(0deg 33% 99%) 37%,
+    hsl(0deg 43% 99%) 42%,
+    hsl(0deg 43% 99%) 46%,
+    hsl(0deg 50% 98%) 50%,
+    hsl(0deg 38% 97%) 54%,
+    hsl(0deg 33% 96%) 58%,
+    hsl(0deg 27% 96%) 63%,
+    hsl(0deg 19% 95%) 67%,
+    hsl(0deg 12% 94%) 71%,
+    hsl(0deg 3% 93%) 75%,
+    hsl(0deg 2% 87%) 79%,
+    hsl(0deg 2% 82%) 83%,
+    hsl(0deg 2% 76%) 87%,
+    hsl(0deg 1% 71%) 92%,
+    hsl(0deg 1% 66%) 96%,
+    hsl(0deg 0% 60%) 100%
+  ); */
 }
 
 .card {
-    background-color: white;
-    border-radius: 8px;
-    margin: 5px;
-    padding: 20px;
-    border: solid 1px #f0f0f0;  
+  background-color: white;
+  border-radius: 8px;
+  margin: 5px;
+  padding: 20px;
+  border: solid 1px #f0f0f0;
 
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-
-
 .card_obtjetive_3d {
-    flex: 0 1 25%;
-    height: 25%;
+  flex: 1;
+  height: 100%;
 }
 
 .card_countors_levels {
-    flex: 0 1 15%;
-    height: 30%;
+  flex: 1;
+  height: 100%;
 }
 
 .card_convergence_curve {
-    flex: 0 1 30%;
-    height: 30%;
+  flex: 1;
+  height: 100%;
 }
 
 .card_feasibility_region {
-    flex: 0 1 25%;
-    height: 25%;
+  flex: 1;
+  height: 100%;
 }
 
 .card_solution_trajectory {
-    flex: 0 1 41%;
-    height: 30%;
+  flex: 1;
+  height: 100%;
 }

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import Plot from 'react-plotly.js'
-import LogoImage from './assets/images/LOGO OPTI (1).svg'
+import LogoImage from './assets/images/logo.svg'
 import { faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import Grid from '@mui/joy/Grid'
 import './assets/styles/home.css'
+import AutoSizer from 'react-virtualized-auto-sizer'
+
+import Plot from 'react-plotly.js'
 
 function FunctionInput() {
   const [functionText, setFunctionText] = useState('x^2 + 3*x + 2')
@@ -116,7 +119,8 @@ function FunctionInput() {
   }
 
   const plotLayoutObjetive3D = {
-    width: 750, // Define a largura do gráfico
+    autosize: true,
+    width: '100%',
     height: 400, // Define a altura do gráfico
     margin: { t: 30, r: 50, b: 40, l: 60 }, // Margens ajustadas
     plot_bgcolor: 'rgba(0,0,0,0)',
@@ -182,7 +186,8 @@ function FunctionInput() {
 
   const plotLayoutSolutionTrajectory = {
     title: 'Trajetória da Solução',
-    width: 550, // Define a largura do gráfico
+    autosize: true,
+    width: '100%', // Define a largura do gráfico
     height: 400, // Define a altura do gráfico
     margin: { t: 50, r: 20, b: 40, l: 60 }, // Margens ajustadas
     plot_bgcolor: 'rgba(255,255,255,1)', // Fundo branco
@@ -268,159 +273,221 @@ function FunctionInput() {
       </div>
 
       <div className="content-home">
-        {Function3D && (
-          <div className="card card_obtjetive_3d">
-            <Plot
-              data={[
-                {
-                  x: Function3D.x,
-                  y: Function3D.y,
-                  z: Function3D.z,
-                  type: 'surface',
-                  colorscale: 'Viridis'
-                }
-              ]}
-              layout={{ ...plotLayoutObjetive3D, title: 'Função Objetivo 3D' }}
-            />
-          </div>
-        )}
-
-        <div className="card card_solution_trajectory">
-          {GradientTrajectory && RandomTrajectory && PointOptimal && (
-            <Plot
-              data={[
-                // Curvas de nível como plano de fundo
-                {
-                  x: Function3D.x,
-                  y: Function3D.y,
-                  z: Function3D.z,
-                  type: 'contour',
-                  colorscale: 'Greys',
-                  showscale: false,
-                  contours: {
-                    coloring: 'lines'
-                  }
-                },
-                // Trajetória do método gradiente
-                {
-                  x: GradientTrajectory.x,
-                  y: GradientTrajectory.y,
-                  mode: 'lines+markers',
-                  type: 'scatter',
-                  name: `Gradiente - Final: (${GradientTrajectory.x.slice(-1)[0]}, ${
-                    GradientTrajectory.y.slice(-1)[0]
-                  })`,
-                  line: { color: 'blue' },
-                  marker: { size: 7 }
-                },
-                // Trajetória do método aleatório
-                {
-                  x: RandomTrajectory.x,
-                  y: RandomTrajectory.y,
-                  mode: 'lines+markers',
-                  type: 'scatter',
-                  name: `Aleatório - Final: (${RandomTrajectory.x.slice(-1)[0]}, ${RandomTrajectory.y.slice(-1)[0]})`,
-                  line: { color: 'red' },
-                  marker: { size: 7 }
-                },
-                // Ponto ótimo
-                {
-                  x: [PointOptimal.x],
-                  y: [PointOptimal.y],
-                  mode: 'markers',
-                  type: 'scatter',
-                  name: `Ótimo - (${PointOptimal.x.toFixed(2)}, ${PointOptimal.y.toFixed(2)}) Valor: ${
-                    PointOptimal.value
-                  }`,
-                  marker: {
-                    color: 'green',
-                    size: 10,
-                    symbol: 'star'
-                  }
-                }
-              ]}
-              layout={{
-                ...plotLayoutSolutionTrajectory,
-                annotations: [
-                  {
-                    x: PointOptimal.x,
-                    y: PointOptimal.y,
-                    text: 'Ponto ótimo',
-                    showarrow: true,
-                    arrowhead: 2,
-                    ax: 0,
-                    ay: -30
-                  }
-                ]
-              }}
-            />
-          )}
-        </div>
-
-        {Function3D && (
-          <div className="card card_countors_levels">
-            <Plot
-              data={[
-                {
-                  x: Function3D.x, // Utiliza os mesmos eixos x e y do gráfico 3D
-                  y: Function3D.y,
-                  z: Function3D.z, // Os valores de z devem ser uma matriz 2D de valores da função objetivo
-                  type: 'heatmap',
-                  colorscale: 'Jet',
-                  showscale: true // Mostra a barra de cores
-                }
-              ]}
-              layout={{ ...plotLayoutCountorsLevels, title: 'Curvas de Nível da Função Objetivo em 2D' }}
-            />
-          </div>
-        )}
-
-        <div className="card card_convergence_curve">
-          {ConvergenceCurve && (
-            <Plot
-              data={ConvergenceCurve.map((curve) => ({
-                x: curve.iter,
-                y: curve.values,
-                type: 'scatter',
-                mode: 'lines+markers',
-                name: curve.type === 'random' ? 'Random' : 'Gradient',
-                line: {
-                  color: curve.type === 'random' ? 'red' : 'blue',
-                  width: 2
-                },
-                marker: {
-                  size: 6
-                }
-              }))}
-              layout={plotLayoutConvergence}
-              config={{
-                responsive: true,
-                displayModeBar: true
-              }}
-            />
-          )}
-        </div>
-
-        {FeasibilityRegion && (
-          <div className="card card_feasibility_region">
-            <Plot
-              data={[
-                {
-                  z: FeasibilityRegion,
-                  x: Function3D.x,
-                  y: Function3D.y,
-                  type: 'heatmap',
-                  colorscale: [
-                    ['0', 'white'],
-                    ['1', 'blue']
-                  ], // Custom colorscale
-                  showscale: false // Hide color scale
-                }
-              ]}
-              layout={{ ...plotLayout, title: 'Feasibility Region' }}
-            />
-          </div>
-        )}
+        <Grid container spacing={8} sx={{ flexGrow: 1 }}>
+          <Grid sm={12} md={12}>
+            {Function3D && (
+              <div className="card card_obtjetive_3d">
+                <AutoSizer style={{ height: 600 }}>
+                  {({ width, height }) => (
+                    <Plot
+                      data={[
+                        {
+                          x: Function3D.x,
+                          y: Function3D.y,
+                          z: Function3D.z,
+                          type: 'surface',
+                          colorscale: 'Viridis'
+                        }
+                      ]}
+                      layout={{ ...plotLayoutObjetive3D, width, height, title: 'Função Objetivo 3D' }}
+                      useResizeHandler
+                      config={{
+                        autosizable: true,
+                        responsive: true,
+                        displayModeBar: true
+                      }}
+                    />
+                  )}
+                </AutoSizer>
+              </div>
+            )}
+          </Grid>
+          <Grid sm={12} md={12}>
+            {GradientTrajectory && RandomTrajectory && PointOptimal && (
+              <div className="card card_solution_trajectory">
+                <AutoSizer style={{ height: 400 }}>
+                  {({ width }) => (
+                    <Plot
+                      data={[
+                        // Curvas de nível como plano de fundo
+                        {
+                          x: Function3D.x,
+                          y: Function3D.y,
+                          z: Function3D.z,
+                          type: 'contour',
+                          colorscale: 'Greys',
+                          showscale: false,
+                          contours: {
+                            coloring: 'lines'
+                          }
+                        },
+                        // Trajetória do método gradiente
+                        {
+                          x: GradientTrajectory.x,
+                          y: GradientTrajectory.y,
+                          mode: 'lines+markers',
+                          type: 'scatter',
+                          name: `Gradiente - Final: (${GradientTrajectory.x.slice(-1)[0]}, ${
+                            GradientTrajectory.y.slice(-1)[0]
+                          })`,
+                          line: { color: 'blue' },
+                          marker: { size: 7 }
+                        },
+                        // Trajetória do método aleatório
+                        {
+                          x: RandomTrajectory.x,
+                          y: RandomTrajectory.y,
+                          mode: 'lines+markers',
+                          type: 'scatter',
+                          name: `Aleatório - Final: (${RandomTrajectory.x.slice(-1)[0]}, ${
+                            RandomTrajectory.y.slice(-1)[0]
+                          })`,
+                          line: { color: 'red' },
+                          marker: { size: 7 }
+                        },
+                        // Ponto ótimo
+                        {
+                          x: [PointOptimal.x],
+                          y: [PointOptimal.y],
+                          mode: 'markers',
+                          type: 'scatter',
+                          name: `Ótimo - (${PointOptimal.x.toFixed(2)}, ${PointOptimal.y.toFixed(2)}) Valor: ${
+                            PointOptimal.value
+                          }`,
+                          marker: {
+                            color: 'green',
+                            size: 10,
+                            symbol: 'star'
+                          }
+                        }
+                      ]}
+                      useResizeHandler
+                      layout={{
+                        ...plotLayoutSolutionTrajectory,
+                        width,
+                        annotations: [
+                          {
+                            x: PointOptimal.x,
+                            y: PointOptimal.y,
+                            text: 'Ponto ótimo',
+                            showarrow: true,
+                            arrowhead: 2,
+                            ax: 0,
+                            ay: -30
+                          }
+                        ]
+                      }}
+                      config={{
+                        autosizable: true,
+                        responsive: true,
+                        displayModeBar: true
+                      }}
+                    />
+                  )}
+                </AutoSizer>
+              </div>
+            )}
+          </Grid>
+          <Grid sm={12} md={6}>
+            {Function3D && (
+              <div className="card card_countors_levels">
+                <AutoSizer style={{ height: 250 }}>
+                  {({ width }) => (
+                    <Plot
+                      data={[
+                        {
+                          x: Function3D.x, // Utiliza os mesmos eixos x e y do gráfico 3D
+                          y: Function3D.y,
+                          z: Function3D.z, // Os valores de z devem ser uma matriz 2D de valores da função objetivo
+                          type: 'heatmap',
+                          colorscale: 'Jet',
+                          showscale: true // Mostra a barra de cores
+                        }
+                      ]}
+                      useResizeHandler
+                      layout={{
+                        autosize: true,
+                        ...plotLayoutCountorsLevels,
+                        width,
+                        title: 'Curvas de Nível da Função Objetivo em 2D'
+                      }}
+                      config={{
+                        autosizable: true,
+                        responsive: true,
+                        displayModeBar: true
+                      }}
+                    />
+                  )}
+                </AutoSizer>
+              </div>
+            )}
+          </Grid>
+          <Grid sm={12} md={6}>
+            {ConvergenceCurve && (
+              <div className="card card_convergence_curve">
+                <AutoSizer style={{ height: 250 }}>
+                  {({ width }) => (
+                    <Plot
+                      data={ConvergenceCurve.map((curve) => ({
+                        x: curve.iter,
+                        y: curve.values,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: curve.type === 'random' ? 'Random' : 'Gradient',
+                        line: {
+                          color: curve.type === 'random' ? 'red' : 'blue',
+                          width: 2
+                        },
+                        marker: {
+                          size: 6
+                        }
+                      }))}
+                      useResizeHandler
+                      layout={{ autosize: true, ...plotLayoutConvergence, width }}
+                      config={{
+                        autosizable: true,
+                        responsive: true,
+                        displayModeBar: true
+                      }}
+                    />
+                  )}
+                </AutoSizer>
+              </div>
+            )}
+          </Grid>
+          <Grid sm={12} md={12}>
+            {FeasibilityRegion && (
+              <div className="card card_feasibility_region">
+                <AutoSizer style={{ height: 250 }}>
+                  {({ width }) => (
+                    <Plot
+                      data={[
+                        {
+                          z: FeasibilityRegion,
+                          x: Function3D.x,
+                          y: Function3D.y,
+                          type: 'heatmap',
+                          colorscale: [
+                            ['0', 'white'],
+                            ['1', 'blue']
+                          ], // Custom colorscale
+                          showscale: false // Hide color scale
+                        }
+                      ]}
+                      useResizeHandler
+                      layout={{ autosize: true, ...plotLayout, width, title: 'Feasibility Region' }}
+                      config={{
+                        autosizable: true,
+                        responsive: true,
+                        displayModeBar: true
+                      }}
+                    />
+                  )}
+                </AutoSizer>
+              </div>
+            )}
+          </Grid>
+        </Grid>
       </div>
     </div>
   )
