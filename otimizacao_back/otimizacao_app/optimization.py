@@ -1,7 +1,7 @@
 import numpy as np
 import sympy as sp
 # from scipy.optimize import minimize
-# import matplotlib.pyplot as plt
+
 import json
 
 def compile_sympy_expression(expr_str, variables):

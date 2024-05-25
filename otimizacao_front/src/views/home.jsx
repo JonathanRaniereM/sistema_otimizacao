@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import LogoImage from './assets/images/logo.svg'
+import LogoImage from './assets/images/LOGO OPTI (2).svg'
 import { faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Grid from '@mui/joy/Grid'
@@ -18,12 +18,13 @@ function FunctionInput() {
   const [GradientTrajectory, setPlotsDataGradientTrajectory] = useState(null)
   const [RandomTrajectory, setPlotsDataRandomTrajectory] = useState(null)
   const [ConvergenceCurve, setPlotsDataConvergenceCurve] = useState(null)
+  const [feasibilityData, setFeasibilityData] = useState(null);
   const [toggleActive, setToggleActive] = useState(false)
   const [ws, setWs] = useState(null)
   const [isMenuVisible, setIsMenuVisible] = useState(false)
 
   useEffect(() => {
-    const newWs = new WebSocket('ws://localhost:8000/ws/manage_otimize/')
+    const newWs = new WebSocket('ws://172.20.80.214:8000/ws/manage_otimize/')
 
     newWs.onopen = () => {
       console.log('WebSocket Connected')
@@ -31,62 +32,79 @@ function FunctionInput() {
     }
 
     newWs.onmessage = (event) => {
-      const message = JSON.parse(event.data)
+      const message = JSON.parse(event.data);
       if (message.type === 'perform_optimization' && message.result) {
-        console.log('COORDENADAS RECEBIDAS', message)
+        console.log("MENSAGEM RECEBIDA", message);
         try {
-          const resultData = JSON.parse(message.result)
-          if (
-            resultData.function_3d &&
-            resultData.function_3d.x &&
-            resultData.function_3d.y &&
-            resultData.function_3d.z
-          ) {
-            setPlotsDataFunction3D(resultData.function_3d)
-            setPlotsDataConvergenceCurve(resultData.convergence_curve)
-            setPlotsDataFeasibilityRegion(resultData.feasibility_region)
-            setPlotsDataRandomTrajectory(resultData.random_trajectory)
-            setPlotsDataGradientTrajectory(resultData.gradient_trajectory)
-            setPlotsDataPointOptimal(resultData.optimization.optimal_point)
-
-            console.log('TRAJETORIA RANDOM', resultData.random_trajectory)
-            console.log('TRAJETORIA GRADIENT', resultData.gradient_trajectory)
+          const resultData = JSON.parse(message.result);
+          if (resultData.function_3d && resultData.function_3d.x && resultData.function_3d.y && resultData.function_3d.z) {
+            // Extrair X, Y, Z da resposta
+            const X = resultData.function_3d.x;
+            const Y = resultData.function_3d.y;
+            const Z = resultData.function_3d.z;
+  
+            
+            const newFeasibilityData = Z.map((row, rowIndex) =>
+              row.map((value, colIndex) => {
+                const x = X[rowIndex];
+                const y = Y[colIndex];
+                // Verifica se todas as restrições são satisfeitas
+                const isWithinBounds =
+                  x + y <= 10 &&
+                  2 * x + y <= 20 &&
+                  x >= 0 &&
+                  y >= 0;
+                return isWithinBounds ? 1 : 0;
+              })
+            );
+  
+            // Atualiza o estado com os dados extraídos
+            setFeasibilityData({
+              x: X,
+              y: Y,
+              z: newFeasibilityData,
+            });
+  
+            setPlotsDataFunction3D(resultData.function_3d);
+            setPlotsDataConvergenceCurve(resultData.convergence_curve);
+            setPlotsDataFeasibilityRegion(resultData.feasibility_region);
+            setPlotsDataRandomTrajectory(resultData.random_trajectory);
+            setPlotsDataGradientTrajectory(resultData.gradient_trajectory);
+            setPlotsDataPointOptimal(resultData.optimization.optimal_point);
+  
+            console.log("TRAJETORIA RANDOM", resultData.random_trajectory);
+            console.log("TRAJETORIA GRADIENT", resultData.gradient_trajectory);
+  
           } else {
-            console.error('Dados de plotagem incompletos:', resultData)
+            console.error('Dados de plotagem incompletos:', resultData);
           }
         } catch (err) {
-          console.error('Falha ao parsear o resultado:', err)
+          console.error('Falha ao parsear o resultado:', err);
         }
       } else if (message.type === 'perform_optimization_all' && message.result) {
-        console.log('COORDENADAS RECEBIDAS', message)
+        console.log('COORDENADAS RECEBIDAS', message);
         try {
-          const resultData = JSON.parse(message.result)
-          if (
-            resultData.function_3d &&
-            resultData.function_3d.x &&
-            resultData.function_3d.y &&
-            resultData.function_3d.z
-          ) {
-            setPlotsDataFunction3D(resultData.function_3d)
-
-            setPlotsDataConvergenceCurve(resultData.convergence_curve)
-            setPlotsDataFeasibilityRegion(resultData.feasibility_region)
-            setPlotsDataRandomTrajectory(resultData.random_trajectory)
-            setPlotsDataGradientTrajectory(resultData.gradient_trajectory)
-            setPlotsDataPointOptimal(resultData.optimization.optimal_point)
+          const resultData = JSON.parse(message.result);
+          if (resultData.function_3d && resultData.function_3d.x && resultData.function_3d.y && resultData.function_3d.z) {
+            setPlotsDataFunction3D(resultData.function_3d);
+            setPlotsDataConvergenceCurve(resultData.convergence_curve);
+            setPlotsDataFeasibilityRegion(resultData.feasibility_region);
+            setPlotsDataRandomTrajectory(resultData.random_trajectory);
+            setPlotsDataGradientTrajectory(resultData.gradient_trajectory);
+            setPlotsDataPointOptimal(resultData.optimization.optimal_point);
           } else {
-            console.error('Dados de plotagem incompletos:', resultData)
+            console.error('Dados de plotagem incompletos:', resultData);
           }
         } catch (err) {
-          console.error('Falha ao parsear o resultado:', err)
+          console.error('Falha ao parsear o resultado:', err);
         }
       }
-    }
-
+    };
+  
     return () => {
-      newWs.close()
-    }
-  }, [])
+      newWs.close();
+    };
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -119,98 +137,201 @@ function FunctionInput() {
   }
 
   const plotLayoutObjetive3D = {
-    autosize: true,
-    width: '100%',
-    height: 400, // Define a altura do gráfico
-    margin: { t: 30, r: 50, b: 40, l: 60 }, // Margens ajustadas
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    paper_bgcolor: 'rgba(0,0,0,0)'
-  }
-
-  const plotLayoutCountorsLevels = {
-    width: 400, // Define a largura do gráfico
-    height: 250, // Define a altura do gráfico
-    margin: { t: 30, r: 20, b: 40, l: 60 }, // Margens ajustadas
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    paper_bgcolor: 'rgba(0,0,0,0)'
-  }
-
-  const plotLayout = {
-    width: 400, // Define a largura do gráfico
-    height: 250, // Define a altura do gráfico
-    margin: { t: 30 },
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    paper_bgcolor: 'rgba(0,0,0,0)'
-  }
-
-  const plotLayoutConvergence = {
-    width: 400, // Define a largura do gráfico
-    height: 250, // Define a altura do gráfico
     title: {
-      text: 'Curva de Convergência',
+      text: 'Função Objetivo 3D',
       font: {
         family: 'Arial, sans-serif',
         size: 20,
-        color: 'black'
+        color: 'white'
       },
       xref: 'paper',
       x: 0.5 // centraliza o título
     },
-    margin: { t: 60, r: 30, b: 30, l: 30 }, // Ajusta a margem para acomodar o título e a legenda
-    plot_bgcolor: 'rgba(255,255,255,0.9)',
+    autosize: true,
+    width: '100%',
+    height: '100%',
+    margin: { t: 30, r: 30, b: 40, l: 30 },
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    scene: {
+      xaxis: {
+        title: 'X Axis',
+        titlefont: { color: '#ffffff' },
+        tickfont: { color: '#ffffff' },
+        gridcolor: '#ffffff',
+        zerolinecolor: '#ffffff',
+        linecolor: '#ffffff'
+      },
+      yaxis: {
+        title: 'Y Axis',
+        titlefont: { color: '#ffffff' },
+        tickfont: { color: '#ffffff' },
+        gridcolor: '#ffffff',
+        zerolinecolor: '#ffffff',
+        linecolor: '#ffffff'
+      },
+      zaxis: {
+        title: 'Z Axis',
+        titlefont: { color: '#ffffff' },
+        tickfont: { color: '#ffffff' },
+        gridcolor: '#ffffff',
+        zerolinecolor: '#ffffff',
+        linecolor: '#ffffff'
+      }
+    }
+  };
+  
+  const gradienteCustomizado = [
+    [0, '#157aab'], // Azul mais escuro
+    [0.5, '#80bfe5'], // Azul claro
+    [1, '#d0e9f8']  // Azul bem claro
+  ];
+  
+  const plotLayoutCountorsLevels = {
+    title: {
+      text: 'Curvas de Nível da Função Objetivo 2D',
+      font: {
+        family: 'Arial, sans-serif',
+        size: 20,
+        color: 'white'
+      },
+      xref: 'paper',
+      x: 0.5 // centraliza o título
+    },
+    width: 400,
+    height: 370,
+    margin: { t: 60, r: 20, b: 40, l: 60 },
+    plot_bgcolor: 'transparent',
+    paper_bgcolor: 'transparent',
+    xaxis: { 
+      title: 'X Axis',
+      titlefont: { color: '#ffffff' },
+      tickfont: { color: '#ffffff' },
+      gridcolor: '#ffffff',
+      zerolinecolor: '#ffffff',
+      linecolor: '#ffffff',
+      color: 'white'
+    },
+    yaxis: { 
+      title: 'Y Axis',
+      titlefont: { color: '#ffffff' },
+      tickfont: { color: '#ffffff' },
+      gridcolor: '#ffffff',
+      zerolinecolor: '#ffffff',
+      linecolor: '#ffffff',
+      color: 'white'
+    },
+    hovermode: 'closest',
+    colorscale: [
+      [0, '#157aab'],
+      [0.5, '#80bfe5'],
+      [1, '#d0e9f8']
+    ]
+  };
+  
+  const dataContours = {
+    type: 'contour',
+    z: [[10, 10.625, 12.5, 15.625, 20], [5.625, 6.25, 8.125, 11.25, 15.625], [2.5, 3.125, 5, 8.125, 12.5], [0.625, 1.25, 3.125, 6.25, 10.625], [0, 0.625, 2.5, 5.625, 10]],
+    colorscale: gradienteCustomizado,
+    autocontour: true,
+    contours: {
+      coloring: 'heatmap'
+    }
+  };
+  
+  const plotLayout = {
+    title: {
+      text: 'Região de Viabilidade',
+      font: {
+        family: 'Arial, sans-serif',
+        size: 20,
+        color: 'white'
+      },
+      xref: 'paper',
+      x: 0.5 // centraliza o título
+    },
+    width: 400,
+    height: 250,
+    margin: { t: 30 },
+    plot_bgcolor: 'transparent',
+    paper_bgcolor: 'transparent',
+    xaxis: { 
+      title: 'X Axis',
+      titlefont: { color: '#ffffff' },
+      tickfont: { color: '#ffffff' },
+      gridcolor: '#ffffff',
+      zerolinecolor: '#ffffff',
+      linecolor: '#ffffff',
+      color: 'white'
+    },
+    yaxis: { 
+      title: 'Y Axis',
+      titlefont: { color: '#ffffff' },
+      tickfont: { color: '#ffffff' },
+      gridcolor: '#ffffff',
+      zerolinecolor: '#ffffff',
+      linecolor: '#ffffff',
+      color: 'white'
+    },
+    hovermode: 'closest'
+  };
+  
+  const plotLayoutConvergence = {
+    width: 400,
+    height: 240,
+    title: {
+      text: 'Curva de Convergência',
+      font: { family: 'Arial, sans-serif', size: 20, color: 'white' },
+      xref: 'paper',
+      x: 0.5
+    },
+    margin: { t: 30, r: 30, b: 30, l: 30 },
+    plot_bgcolor: 'transparent',
     paper_bgcolor: 'transparent',
     hovermode: 'closest',
-    xaxis: {
-      title: 'Iteração',
-      showgrid: true,
-      zeroline: true,
-      gridcolor: 'lightgrey'
-    },
-    yaxis: {
-      title: 'Valor da Função',
-      showline: false,
-      gridcolor: 'lightgrey'
-    },
+
     legend: {
       orientation: 'h',
       x: 1,
       xanchor: 'right',
-      y: 1.05, // Posiciona a legenda acima do gráfico
+      y: 1.05,
+      font: { family: 'Arial, sans-serif', size: 14, color: 'white' }
+    }
+  };
+  
+  const plotLayoutSolutionTrajectory = {
+    title: {
+      text: 'Trajétoria da Solução',
       font: {
         family: 'Arial, sans-serif',
-        size: 14,
-        color: '#333'
-      }
-    }
-  }
-
-  const plotLayoutSolutionTrajectory = {
-    title: 'Trajetória da Solução',
+        size: 20,
+        color: 'white'
+      },
+      xref: 'paper',
+      x: 0.5 // centraliza o título
+    },
     autosize: true,
-    width: '100%', // Define a largura do gráfico
-    height: 400, // Define a altura do gráfico
-    margin: { t: 50, r: 20, b: 40, l: 60 }, // Margens ajustadas
-    plot_bgcolor: 'rgba(255,255,255,1)', // Fundo branco
-    paper_bgcolor: 'rgba(255,255,255,1)',
+    width: '100%',
+    height: 450,
+    margin: { t: 50, r: 20, b: 40, l: 60 },
+    plot_bgcolor: 'transparent',
+    paper_bgcolor: 'transparent',
     hovermode: 'closest',
-
-    showlegend: true, // Mostra a legenda
+   
+    
     legend: {
       orientation: 'h',
       x: 0.5,
       xanchor: 'center',
-      y: -0.3, // Posição acima do gráfico
+      y: -0.3,
       yanchor: 'top',
-      font: {
-        family: 'Arial, sans-serif',
-        size: 12,
-        color: '#333'
-      },
-      bgcolor: 'rgba(255,255,255,0.5)', // Fundo semi-transparente para legibilidade
-      bordercolor: 'Black',
+      font: { family: 'Arial, sans-serif', size: 12, color: 'white' },
+      bgcolor: 'rgba(255,255,255,0.5)',
+      bordercolor: 'white',
       borderwidth: 1
     }
-  }
+  };
+  
 
   function toggleMenu() {
     setIsMenuVisible(!isMenuVisible)
@@ -257,7 +378,7 @@ function FunctionInput() {
               <FontAwesomeIcon
                 icon={isMenuVisible ? faChevronUp : faChevronDown}
                 onClick={toggleMenu}
-                style={{ cursor: 'pointer', position: 'relative' }}
+                style={{ cursor: 'pointer', position: 'relative',color: 'white' }}
               />
               <div id="context-menu" className="context-menu" style={{ display: isMenuVisible ? 'block' : 'none' }}>
                 <button type="submit" onClick={submitForm}>
@@ -274,35 +395,47 @@ function FunctionInput() {
 
       <div className="content-home">
         <Grid container spacing={8} sx={{ flexGrow: 1 }}>
-          <Grid sm={12} md={12}>
+          <Grid sm={12} md={8}>
             {Function3D && (
-              <div className="card card_obtjetive_3d">
-                <AutoSizer style={{ height: 600 }}>
-                  {({ width, height }) => (
-                    <Plot
-                      data={[
-                        {
-                          x: Function3D.x,
-                          y: Function3D.y,
-                          z: Function3D.z,
-                          type: 'surface',
-                          colorscale: 'Viridis'
+              <div className="card_secondary card_obtjetive_3d">
+              <AutoSizer style={{ height: 600 }}>
+                {({ width, height }) => (
+                  <Plot
+                    data={[
+                      {
+                        x: Function3D.x,
+                        y: Function3D.y,
+                        z: Function3D.z,
+                        type: 'surface',
+                        colorscale: gradienteCustomizado,
+                        colorbar: {
+                          title: ' ', // Título da colorbar
+                          titleside: 'right',
+                          titlefont: {
+                            size: 12,
+                            color: 'white'
+                          },
+                          tickfont: {
+                            size: 10,
+                            color: 'white'
+                          }
                         }
-                      ]}
-                      layout={{ ...plotLayoutObjetive3D, width, height, title: 'Função Objetivo 3D' }}
-                      useResizeHandler
-                      config={{
-                        autosizable: true,
-                        responsive: true,
-                        displayModeBar: true
-                      }}
-                    />
-                  )}
-                </AutoSizer>
+                      }
+                    ]}
+                    layout={{ ...plotLayoutObjetive3D, width, height }}
+                    useResizeHandler
+                    config={{
+                      autosizable: true,
+                      responsive: true,
+                      displayModeBar: false
+                    }}
+                  />
+                )}
+              </AutoSizer>
               </div>
             )}
           </Grid>
-          <Grid sm={12} md={12}>
+          <Grid sm={12} md={4}>
             {GradientTrajectory && RandomTrajectory && PointOptimal && (
               <div className="card card_solution_trajectory">
                 <AutoSizer style={{ height: 400 }}>
@@ -315,7 +448,7 @@ function FunctionInput() {
                           y: Function3D.y,
                           z: Function3D.z,
                           type: 'contour',
-                          colorscale: 'Greys',
+                          colorscale: 'White',
                           showscale: false,
                           contours: {
                             coloring: 'lines'
@@ -330,7 +463,7 @@ function FunctionInput() {
                           name: `Gradiente - Final: (${GradientTrajectory.x.slice(-1)[0]}, ${
                             GradientTrajectory.y.slice(-1)[0]
                           })`,
-                          line: { color: 'blue' },
+                          line: { color: 'red' },
                           marker: { size: 7 }
                         },
                         // Trajetória do método aleatório
@@ -342,7 +475,7 @@ function FunctionInput() {
                           name: `Aleatório - Final: (${RandomTrajectory.x.slice(-1)[0]}, ${
                             RandomTrajectory.y.slice(-1)[0]
                           })`,
-                          line: { color: 'red' },
+                          line: { color: '#1c1833' },
                           marker: { size: 7 }
                         },
                         // Ponto ótimo
@@ -355,7 +488,7 @@ function FunctionInput() {
                             PointOptimal.value
                           }`,
                           marker: {
-                            color: 'green',
+                            color: '#f9fa10',
                             size: 10,
                             symbol: 'star'
                           }
@@ -380,7 +513,7 @@ function FunctionInput() {
                       config={{
                         autosizable: true,
                         responsive: true,
-                        displayModeBar: true
+                        displayModeBar: false
                       }}
                     />
                   )}
@@ -388,41 +521,8 @@ function FunctionInput() {
               </div>
             )}
           </Grid>
-          <Grid sm={12} md={6}>
-            {Function3D && (
-              <div className="card card_countors_levels">
-                <AutoSizer style={{ height: 250 }}>
-                  {({ width }) => (
-                    <Plot
-                      data={[
-                        {
-                          x: Function3D.x, // Utiliza os mesmos eixos x e y do gráfico 3D
-                          y: Function3D.y,
-                          z: Function3D.z, // Os valores de z devem ser uma matriz 2D de valores da função objetivo
-                          type: 'heatmap',
-                          colorscale: 'Jet',
-                          showscale: true // Mostra a barra de cores
-                        }
-                      ]}
-                      useResizeHandler
-                      layout={{
-                        autosize: true,
-                        ...plotLayoutCountorsLevels,
-                        width,
-                        title: 'Curvas de Nível da Função Objetivo em 2D'
-                      }}
-                      config={{
-                        autosizable: true,
-                        responsive: true,
-                        displayModeBar: true
-                      }}
-                    />
-                  )}
-                </AutoSizer>
-              </div>
-            )}
-          </Grid>
-          <Grid sm={12} md={6}>
+          
+          <Grid sm={12} md={4}>
             {ConvergenceCurve && (
               <div className="card card_convergence_curve">
                 <AutoSizer style={{ height: 250 }}>
@@ -447,7 +547,51 @@ function FunctionInput() {
                       config={{
                         autosizable: true,
                         responsive: true,
-                        displayModeBar: true
+                        displayModeBar: false
+                      }}
+                    />
+                  )}
+                </AutoSizer>
+              </div>
+            )}
+
+          </Grid>
+          <Grid sm={12} md={4}>
+            {FeasibilityRegion && (
+              <div className="card card_feasibility_region">
+                <AutoSizer style={{ height: 250 }}>
+                  {({ width }) => (
+                    <Plot
+                    data={[
+                      {
+                        z: Function3D.z,
+                        x: Function3D.x,
+                        y: Function3D.y,
+                        type: 'contour',
+                        colorscale: 'white',
+                        contours: {
+                          coloring: 'lines',
+                        },
+                      },
+                      {
+                        z: feasibilityData.z,
+                        x: feasibilityData.x,
+                        y: feasibilityData.y,
+                        type: 'heatmap',
+                        colorscale: [
+                          ['0', 'transparent'],
+                          ['1', 'blue']
+                        ],
+                        showscale: true // Esconde a barra de cores
+                      }
+                    ]}
+
+                      useResizeHandler
+                      layout={{ autosize: true, ...plotLayout, width}}
+                      config={{
+                        autosizable: true,
+                        responsive: true,
+                        displayModeBar: false
                       }}
                     />
                   )}
@@ -455,31 +599,71 @@ function FunctionInput() {
               </div>
             )}
           </Grid>
-          <Grid sm={12} md={12}>
-            {FeasibilityRegion && (
-              <div className="card card_feasibility_region">
+          <Grid sm={12} md={4}>
+            {Function3D && (
+              <div className="card card_countors_levels">
                 <AutoSizer style={{ height: 250 }}>
                   {({ width }) => (
                     <Plot
-                      data={[
-                        {
-                          z: FeasibilityRegion,
-                          x: Function3D.x,
-                          y: Function3D.y,
-                          type: 'heatmap',
-                          colorscale: [
-                            ['0', 'white'],
-                            ['1', 'blue']
-                          ], // Custom colorscale
-                          showscale: false // Hide color scale
+
+                    data={[
+                      {
+                        z: Function3D.z,
+                        x: Function3D.x,
+                        y: Function3D.y,
+                        type: 'contour',
+                        colorscale: 'white',
+                        contours: {
+                          coloring: 'lines',
+                          color:'red'
+                        },
+                        colorbar: {
+                         
+                          titleside: 'right',
+                          titlefont: {
+                            size: 12,
+                            color: 'transparent'
+                          },
+                          tickfont: {
+                            size: 10,
+                            color: 'transparent'
+                          }
                         }
-                      ]}
+                        
+                      },
+                      {
+                        x: Function3D.x, // Utiliza os mesmos eixos x e y do gráfico 3D
+                        y: Function3D.y,
+                        z: Function3D.z, // Os valores de z devem ser uma matriz 2D de valores da função objetivo
+                        type: 'heatmap',
+                        colorscale:gradienteCustomizado,
+                        showscale: true, // Esconde a barra de cores
+                        colorbar: {
+                          title: 'Intensidade', // Título da colorbar
+                          titleside: 'right',
+                          titlefont: {
+                            size: 12,
+                            color: 'white'
+                          },
+                          tickfont: {
+                            size: 10,
+                            color: 'white'
+                          }
+                        }
+                      }
+                    ]}
+                    
+                    
                       useResizeHandler
-                      layout={{ autosize: true, ...plotLayout, width, title: 'Feasibility Region' }}
+                      layout={{
+                        autosize: true,
+                        ...plotLayoutCountorsLevels,
+                        width
+                      }}
                       config={{
                         autosizable: true,
                         responsive: true,
-                        displayModeBar: true
+                        displayModeBar: false
                       }}
                     />
                   )}

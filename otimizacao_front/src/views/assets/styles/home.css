@@ -2,7 +2,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #ffffff;
+  background: rgb(2,0,36);
+  background: linear-gradient(90deg, rgba(2,0,36,1) 1%, rgba(10,84,117,1) 44%, rgba(21,122,171,1) 74%, rgba(6,134,171,1) 100%);
   padding: 0px;
   color: #333;
   font-family: 'Poppins', sans-serif;
@@ -20,21 +21,34 @@
   flex: 1;
 }
 
+
+
+.form-container input::placeholder {
+  color: rgba(255, 255, 255, 0.5);  /* Placeholder branco clarinho */
+}
+
+
+
+
 .form-container input {
   margin: 5px;
+  background: transparent;
   padding: 10px;
-  border: 1px solid #ccc;
+  color: white;
+  border: 2px solid white;
   border-radius: 8px;
+  outline: none;
   transition: border 0.3s ease-in-out;
 }
 
 .form-container input:focus {
-  border-color: #333;
+  border-color: #e2e2e2;
 }
 
 .menu-icon-container {
   position: relative;
   display: inline-block;
+ 
 }
 
 .context-menu {
@@ -68,67 +82,59 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  /* background-image: linear-gradient(
-    180deg,
-    hsl(240deg 25% 98%) 0%,
-    hsl(270deg 25% 98%) 4%,
-    hsl(270deg 33% 99%) 8%,
-    hsl(300deg 33% 99%) 13%,
-    hsl(300deg 20% 99%) 17%,
-    hsl(330deg 50% 99%) 21%,
-    hsl(0deg 33% 99%) 25%,
-    hsl(0deg 50% 99%) 29%,
-    hsl(0deg 50% 99%) 33%,
-    hsl(0deg 33% 99%) 37%,
-    hsl(0deg 43% 99%) 42%,
-    hsl(0deg 43% 99%) 46%,
-    hsl(0deg 50% 98%) 50%,
-    hsl(0deg 38% 97%) 54%,
-    hsl(0deg 33% 96%) 58%,
-    hsl(0deg 27% 96%) 63%,
-    hsl(0deg 19% 95%) 67%,
-    hsl(0deg 12% 94%) 71%,
-    hsl(0deg 3% 93%) 75%,
-    hsl(0deg 2% 87%) 79%,
-    hsl(0deg 2% 82%) 83%,
-    hsl(0deg 2% 76%) 87%,
-    hsl(0deg 1% 71%) 92%,
-    hsl(0deg 1% 66%) 96%,
-    hsl(0deg 0% 60%) 100%
-  ); */
+  background:#06547E;
 }
 
 .card {
-  background-color: white;
+  
+  background-color: #157aab;
   border-radius: 8px;
   margin: 5px;
   padding: 20px;
-  border: solid 1px #f0f0f0;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
+.card_secondary {
+  
+  background: linear-gradient(
+    to bottom, 
+    #0a5475,  /* Cor inicial */
+    #07425a,  /* Um pouco mais escuro */
+    #032a40   /* Ainda mais escuro */
+);
+  border-radius: 8px;
+  margin: 5px;
+  padding: 20px;
+  border: 3px solid #5ba8c9; /* Borda azul clara */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card_obtjetive_3d {
+  margin-top: 20px !important;
   flex: 1;
   height: 100%;
 }
 
 .card_countors_levels {
   flex: 1;
-  height: 100%;
+  height: 120%;
+  margin-top: -140px;
+  
 }
 
 .card_convergence_curve {
   flex: 1;
-  height: 100%;
+  height: 70%;
 }
 
 .card_feasibility_region {
   flex: 1;
-  height: 100%;
+  height: 70%;
 }
 
 .card_solution_trajectory {
+  margin-top: 20px !important;
   flex: 1;
-  height: 100%;
+  height: 70%;
 }
