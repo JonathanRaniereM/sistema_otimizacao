@@ -24,7 +24,7 @@ function FunctionInput() {
   const [isMenuVisible, setIsMenuVisible] = useState(false)
 
   useEffect(() => {
-    const newWs = new WebSocket('ws://172.20.80.214:8000/ws/manage_otimize/')
+    const newWs = new WebSocket('ws://10.100.0.23:8000/ws/manage_otimize/')
 
     newWs.onopen = () => {
       console.log('WebSocket Connected')
@@ -83,6 +83,33 @@ function FunctionInput() {
         }
       } else if (message.type === 'perform_optimization_all' && message.result) {
         console.log('COORDENADAS RECEBIDAS', message);
+        const resultData = JSON.parse(message.result);
+
+        // Extrair X, Y, Z da resposta
+        const X = resultData.function_3d.x;
+        const Y = resultData.function_3d.y;
+        const Z = resultData.function_3d.z;
+
+        
+        const newFeasibilityData = Z.map((row, rowIndex) =>
+          row.map((value, colIndex) => {
+            const x = X[rowIndex];
+            const y = Y[colIndex];
+            // Verifica se todas as restrições são satisfeitas
+            const isWithinBounds =
+              x + y <= 10 &&
+              2 * x + y <= 20 &&
+              x >= 0 &&
+              y >= 0;
+            return isWithinBounds ? 1 : 0;
+          })
+        );
+        // Atualiza o estado com os dados extraídos
+        setFeasibilityData({
+          x: X,
+          y: Y,
+          z: newFeasibilityData,
+        });
         try {
           const resultData = JSON.parse(message.result);
           if (resultData.function_3d && resultData.function_3d.x && resultData.function_3d.y && resultData.function_3d.z) {
@@ -182,10 +209,20 @@ function FunctionInput() {
   };
   
   const gradienteCustomizado = [
-    [0, '#157aab'], // Azul mais escuro
-    [0.5, '#80bfe5'], // Azul claro
-    [1, '#d0e9f8']  // Azul bem claro
+    [0, 'rgba(255,255,255,1)'],    // Branco
+    [0.17, 'rgba(215,242,236,1)'],    // Branco azulado muito suave
+    [0.33, 'rgba(175,228,217,1)'],    // Azul esverdeado claro
+    [0.37, 'rgba(165,225,212,1)'],    // Azul esverdeado um pouco mais escuro
+    [0.42, 'rgba(152,221,206,1)'],    // Suavização para o próximo
+    [0.44, 'rgba(147,219,204,1)'],    // Leve ajuste para mais escuro
+    [0.57, 'rgba(114,208,188,1)'],    // Azul esverdeado médio
+    [0.74, 'rgba(71,193,167,1)'],     // Azul esverdeado mais escuro
+    [0.85, 'rgba(6,171,136,1)'],      // Verde azulado forte
+    [0.93, 'rgba(6,171,136,1)'],      // Mantendo a cor
+    [0.99, 'rgba(6,171,136,1)'],      // Continuidade até o final
+    [1, 'rgba(6,171,136,1)']       // Verde azulado forte no final
   ];
+  
   
   const plotLayoutCountorsLevels = {
     title: {
@@ -448,11 +485,21 @@ function FunctionInput() {
                           y: Function3D.y,
                           z: Function3D.z,
                           type: 'contour',
-                          colorscale: 'White',
-                          showscale: false,
-                          contours: {
-                            coloring: 'lines'
+                          colorscale: [[0, 'white'], [1, 'white']], // Escala transparente para o preenchimento
+                        contours: {
+                          coloring: 'lines', // Mostra apenas as linhas
+                          showlabels: false, // Opcional: desativa os labels nas linhas de contorno
+                          labelfont: {
+                            // Opcional: configura a fonte dos labels, se você escolher mostrar
+                            size: 12,
+                            color: 'white',
+                          },
+                          line: {
+                            color: 'white', // Define a cor das linhas para branco
+                            width: 6,
+                            height:10 // Aumenta a espessura das linhas para 2 pixels
                           }
+                        },
                         },
                         // Trajetória do método gradiente
                         {
@@ -535,7 +582,7 @@ function FunctionInput() {
                         mode: 'lines+markers',
                         name: curve.type === 'random' ? 'Random' : 'Gradient',
                         line: {
-                          color: curve.type === 'random' ? 'red' : 'blue',
+                          color: curve.type === 'random' ? '#1c1833' : 'red',
                           width: 2
                         },
                         marker: {
@@ -568,9 +615,20 @@ function FunctionInput() {
                         x: Function3D.x,
                         y: Function3D.y,
                         type: 'contour',
-                        colorscale: 'white',
+                        colorscale: [[0, 'white'], [1, 'white']], // Escala transparente para o preenchimento
                         contours: {
-                          coloring: 'lines',
+                          coloring: 'lines', // Mostra apenas as linhas
+                          showlabels: false, // Opcional: desativa os labels nas linhas de contorno
+                          labelfont: {
+                            // Opcional: configura a fonte dos labels, se você escolher mostrar
+                            size: 12,
+                            color: 'white',
+                          },
+                          line: {
+                            color: 'white', // Define a cor das linhas para branco
+                            width: 6,
+                            height:10 // Aumenta a espessura das linhas para 2 pixels
+                          }
                         },
                       },
                       {
@@ -580,7 +638,7 @@ function FunctionInput() {
                         type: 'heatmap',
                         colorscale: [
                           ['0', 'transparent'],
-                          ['1', 'blue']
+                          ['1', '#47c1a7']
                         ],
                         showscale: true // Esconde a barra de cores
                       }
@@ -612,10 +670,20 @@ function FunctionInput() {
                         x: Function3D.x,
                         y: Function3D.y,
                         type: 'contour',
-                        colorscale: 'white',
+                        colorscale: [[0, '#1c1833'], [1, '#1c1833']], // Escala transparente para o preenchimento
                         contours: {
-                          coloring: 'lines',
-                          color:'red'
+                          coloring: 'lines', // Mostra apenas as linhas
+                          showlabels: false, // Opcional: desativa os labels nas linhas de contorno
+                          labelfont: {
+                            // Opcional: configura a fonte dos labels, se você escolher mostrar
+                            size: 12,
+                            color: 'white',
+                          },
+                          line: {
+                            color: 'white', // Define a cor das linhas para branco
+                            width: 6,
+                            height:10 // Aumenta a espessura das linhas para 2 pixels
+                          }
                         },
                         colorbar: {
                          
