@@ -12,6 +12,8 @@ from djangochannelsrestframework.mixins import (
 )
 
 import logging
+import uuid
+
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
@@ -60,16 +62,16 @@ import logging
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 logger = logging.getLogger(__name__)
+connected_users = {}  
 
 class OtimizeConsumer(AsyncJsonWebsocketConsumer):
     
     async def connect(self):
         logger.info("Conexão estabelecida.")
         print("Método connect chamado!")
-        
-        # Verificar se reuniao_id está na URL. Se não, definir um padrão (por exemplo, "global").
+
         reuniao_id = self.scope['url_route']['kwargs'].get('reuniao_id', 'global')
-        
+
         self.room_group_name = f"presenca_{reuniao_id}"
         
         await self.channel_layer.group_add(
@@ -77,10 +79,18 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
             self.channel_name
         )
         self.accept()
+        
         await super().connect()
+        await self.send_json({
+            'type': 'nickname_request'
+        })
         logger.info(f"Conexão estabelecida. Conectado ao grupo {self.room_group_name}.")
 
     async def disconnect(self, close_code):
+        if hasattr(self, 'nickname') and self.channel_name in connected_users:
+            del connected_users[self.channel_name]
+            logger.info(f"Usuário {self.nickname} desconectado.")
+        
         status_message = getStatusCodeString(close_code)
         logger.info(f"Desconexão com código: {close_code} - {status_message}")
         await self.channel_layer.group_discard(
@@ -92,16 +102,38 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content, **kwargs):
         action = content.get('action')
         logger.info(f"Recebido: {content}")
+        if action == 'authenticate':
+            self.nickname = content['nickname']
+            # self.user_id = self.scope['session'].session_key
+            self.user_id = str(uuid.uuid4())
+            connected_users[self.channel_name] = {
+                'id': self.user_id,
+                'nickname': self.nickname
+            }
+            logger.info(f"Usuário {self.nickname} conectado com ID {self.user_id}.")
+            await self.send_json({
+                'type': 'authenticated',
+                'id': self.user_id,
+                'nickname': self.nickname
+            })
+
+        if action == 'get_users':
+            await self.send_json({
+                'type': 'user_list',
+                'users': [
+                    {'id': user['id'], 'nickname': user['nickname']}
+                    for user in connected_users.values()
+                ]
+            })
         if action == 'optimize':
             await self.perform_optimization(content)
-        if action == 'optimize_all':
-            await self.perform_optimization_all(content)
         else:
             logger.warning(f"Ação desconhecida recebida: {action}")
 
     async def perform_optimization(self, content):
         type = content['type']
         method = content['method']
+        users = content['users']
         data = content['data']
         logger.info(f"Iniciando otimização com método: {method}, dados: {data}")
         
@@ -122,40 +154,28 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
         }
         
         logger.info(f"Enviando resultado da otimização: {response}")
-        await self.send_json(response)
-
-
-    async def perform_optimization_all(self, content):
-        type = content['type']
-        method = content['method']
-        data = content['data']
-        logger.info(f"Iniciando otimização com método: {method}, dados: {data}")
-
-        from .optimization import method_random_and_method_gradient
-
-        if method == 'random':
-            result = await database_sync_to_async(method_random_and_method_gradient)(data)
+        if content['optimize_all']:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'perform_optimization_update',  # Este é o método handler no consumer que vai tratar a mensagem
+                    'message': response
+                }
+            )
+        elif len(users) == 0:
+            await self.send_json(response)
         else:
-            result = {'error': 'Método de otimização desconhecido'}
-            logger.error(f"Método de otimização desconhecido: {method}")
-
-        response = {
-            'type': type,
-            'method': method,
-            'data': data,
-            'result': result
-        }
-
-        logger.info(f"Enviando resultado da otimização para todos no grupo: {self.room_group_name}")
-        # Enviar a resposta para todos no grupo
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'perform_optimization_update',  # Este é o método handler no consumer que vai tratar a mensagem
-                'message': response
-            }
-        )
-
+            await self.send_json(response)
+            for user_channel, user_info in connected_users.items():
+                logger.info(f"user_info: {user_info}")
+                if user_info['id'] in users:
+                    await self.channel_layer.send(
+                        user_channel,
+                        {
+                            'type': 'perform_optimization_update',
+                            'message': response
+                        }
+                    )
         
     async def perform_optimization_update(self, event):
         # Extrai a mensagem de 'event' que foi enviada pelo 'group_send'
