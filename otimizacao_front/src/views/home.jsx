@@ -2,20 +2,21 @@ import React, { useState, useEffect } from "react";
 import LogoImage from "./assets/images/LOGO OPTI (2).svg";
 import { faChevronUp, faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import Grid from "@mui/material/Grid";
+import Grid from '@mui/material/Grid';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import Filter from 'bad-words';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import TextField from '@mui/material/TextField';
+
 import { useCookies } from "react-cookie";
 import "./assets/styles/home.css";
 import AutoSizer from "react-virtualized-auto-sizer";
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  MenuItem,
-  Select,
-  TextField,
-} from "@mui/material";
+
 import { makeStyles } from "@mui/styles";
 
 import Plot from "react-plotly.js";
@@ -40,35 +41,95 @@ const useStyles = makeStyles(() => ({
       backgroundColor: "#ffdd44",
     },
   },
+  floatingCard: {
+    position: "fixed",
+    bottom: 20,
+    right: 20,
+    width: 300,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 10,
+    padding: 15,
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    zIndex: 1000,
+  },
+  cardTitle: {
+    margin: 0,
+    marginBottom: 10,
+    fontFamily: "Arial, sans-serif",
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  userList: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+    fontFamily: "Arial, sans-serif",
+    fontSize: 14,
+    color: "#555",
+  },
+  userListItem: {
+    marginBottom: 5,
+  },
+  minimizeButton: {
+    background: "none",
+    border: "none",
+    fontSize: 16,
+    cursor: "pointer",
+  },
+  userGreeting: {
+    fontFamily: "Arial, sans-serif",
+    color: "white",
+    fontSize: "16px",
+    position: "absolute",
+    right: "20px",
+    top: "20px",
+  },
 }));
+
+const filter = new Filter(); // Instancia o filtro de palavrões
+filter.addWords('merda', 'bosta', 'porra', 'caralho', 'puta', 'puto', 'fuder', 
+  'foda', 'arrombado', 'cu', 'cuzão', 'desgraça', 'desgraçado', 
+  'piranha', 'vagabundo', 'vagabunda', 'cacete', 'vai tomar no cu', 
+  'vai se foder', 'filho da puta', 'corno', 'trouxa', 'otário','otario','coco');
+console.log(filter.list);
 
 function FunctionInput() {
   const classes = useStyles();
   const [cookies, setCookie] = useCookies(["nickname"]);
   const nickname = cookies.nickname;
-
-  const [functionText, setFunctionText] = useState("x^2 + 3*x + 2");
-  const [bounds, setBounds] = useState("[[-10, 10], [-10, 10]]");
+  const [isCardVisible, setIsCardVisible] = useState(true);
+  const [functionText, setFunctionText] = useState("(x-2)^2 + (y-4)^2");
+  const [bounds, setBounds] = useState("[[-50, 50], [-50, 50]]");
   const [maxIter, setMaxIter] = useState("5");
   const [Function3D, setPlotsDataFunction3D] = useState(null); // Mantenha null aqui para controle de fluxo
   const [PointOptimal, setPlotsDataPointOptimal] = useState(null);
+  const [ResultInfoPlot, setPlotResultInfoPlot] = useState(null);
   const [FeasibilityRegion, setPlotsDataFeasibilityRegion] = useState(null);
   const [GradientTrajectory, setPlotsDataGradientTrajectory] = useState(null);
   const [RandomTrajectory, setPlotsDataRandomTrajectory] = useState(null);
   const [ConvergenceCurve, setPlotsDataConvergenceCurve] = useState(null);
   const [feasibilityData, setFeasibilityData] = useState(null);
   const [ws, setWs] = useState(null);
+  const [userNickname, setUserNickname] = useState("");
+  const [nicknameError, setNicknameError] = useState("");
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-
+  const [modoExpectador, setModoExpectador] = useState(false);
   const [ready, setReady] = useState(null);
   const [openNicknameDialog, setOpenNicknameDialog] = useState(true);
   const [inputed, setInputed] = useState(false);
   const [nicknameInput, setNicknameInput] = useState("");
-
   const [open, setOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState([]);
-
+  const [userList, setUserList] = useState([]);
+  const handleMinimizeCard = () => {
+    setIsCardVisible(!isCardVisible);
+  };
+  
   useEffect(() => {
     if (!ready) {
       return;
@@ -78,14 +139,35 @@ function FunctionInput() {
       const message = JSON.parse(event.data);
 
       if (message.type === "user_list") {
-        const filteredUsers = message.users.filter(
-          (user) => user.id !== ready.id
-        );
-        setUsers(filteredUsers);
+        // Inclui todos os usuários exceto o próprio (que será adicionado depois, se não estiver já incluído)
+        const updatedUsers = message.users.filter(user => user.id !== ready.id);
+        setUserList(updatedUsers);
+      }
+
+      if (message.type === "user_joined") {
+        setUserList(prevList => {
+          const isUserAlreadyListed = prevList.some(user => user.id === message.user_id);
+          if (!isUserAlreadyListed) {
+            return [...prevList, { id: message.user_id, nickname: message.nickname }];
+          }
+          return prevList;
+        });
       }
 
       if (message.type === "perform_optimization" && message.result) {
         console.log("MENSAGEM RECEBIDA", message);
+
+        if (message.optimize_all) {
+          setModoExpectador(true);
+          setFunctionText(message.data.objective_function_str)
+          setMaxIter(message.data.max_iter)
+          setBounds('[ [' + message.data.bounds[0] + '] , ' + '[' + message.data.bounds[1] + '] ]');
+        } else {
+          setModoExpectador(false);
+        }
+
+       
+
         try {
           const resultData = JSON.parse(message.result);
           if (
@@ -116,6 +198,8 @@ function FunctionInput() {
               y: Y,
               z: newFeasibilityData,
             });
+
+            setPlotResultInfoPlot(message.result);
 
             setPlotsDataFunction3D(resultData.function_3d);
             setPlotsDataConvergenceCurve(resultData.convergence_curve);
@@ -182,7 +266,9 @@ function FunctionInput() {
         }
       }
     };
-  }, [ready?.id]);
+    ready.ws.send(JSON.stringify({ action: "get_users" }));
+
+  }, [ready?.id,modoExpectador,nickname]);
 
   useEffect(() => {
     if (!inputed) {
@@ -190,7 +276,7 @@ function FunctionInput() {
     }
 
     const newWs = new WebSocket(
-      `ws://localhost:8000/ws/manage_otimize/?nickname=${nickname}`
+      `ws://10.100.0.23:8000/ws/manage_otimize/?nickname=${nickname}`
     );
 
     newWs.onmessage = (event) => {
@@ -288,25 +374,25 @@ function FunctionInput() {
     },
     width: 400,
     height: 370,
-    margin: { t: 60, r: 20, b: 40, l: 60 },
+    margin: { t: 60, r: 0, b: 20, l: 40 },
     plot_bgcolor: "transparent",
     paper_bgcolor: "transparent",
     xaxis: {
-      title: "X Axis",
+     
       titlefont: { color: "#ffffff" },
       tickfont: { color: "#ffffff" },
-      gridcolor: "#ffffff",
-      zerolinecolor: "#ffffff",
-      linecolor: "#ffffff",
+      gridcolor: "#333",
+      zerolinecolor: "#333",
+      linecolor: "#333",
       color: "white",
     },
     yaxis: {
-      title: "Y Axis",
+ 
       titlefont: { color: "#ffffff" },
       tickfont: { color: "#ffffff" },
-      gridcolor: "#ffffff",
-      zerolinecolor: "#ffffff",
-      linecolor: "#ffffff",
+      gridcolor: "#333",
+      zerolinecolor: "#333",
+      linecolor: "#333",
       color: "white",
     },
     hovermode: "closest",
@@ -338,33 +424,33 @@ function FunctionInput() {
       text: "Região de Viabilidade",
       font: {
         family: "Arial, sans-serif",
-        size: 20,
+        size: 18,
         color: "white",
       },
       xref: "paper",
       x: 0.5, // centraliza o título
     },
-    width: 400,
-    height: 250,
-    margin: { t: 30 },
+    width: 700,
+    height: 270,
+    margin: { t: 28, r: 0, b: 50, l: 37 },
     plot_bgcolor: "transparent",
     paper_bgcolor: "transparent",
     xaxis: {
-      title: "X Axis",
+      
       titlefont: { color: "#ffffff" },
       tickfont: { color: "#ffffff" },
-      gridcolor: "#ffffff",
-      zerolinecolor: "#ffffff",
-      linecolor: "#ffffff",
+      gridcolor: "#333",
+      zerolinecolor: "#333",
+      linecolor: "#333",
       color: "white",
     },
     yaxis: {
-      title: "Y Axis",
+   
       titlefont: { color: "#ffffff" },
       tickfont: { color: "#ffffff" },
-      gridcolor: "#ffffff",
-      zerolinecolor: "#ffffff",
-      linecolor: "#ffffff",
+      gridcolor: "#333",
+      zerolinecolor: "#333",
+      linecolor: "#333",
       color: "white",
     },
     hovermode: "closest",
@@ -372,14 +458,32 @@ function FunctionInput() {
 
   const plotLayoutConvergence = {
     width: 400,
-    height: 240,
+    height: 270,
     title: {
       text: "Curva de Convergência",
-      font: { family: "Arial, sans-serif", size: 20, color: "white" },
+      font: { family: "Arial, sans-serif", size: 18, color: "white" },
       xref: "paper",
       x: 0.5,
     },
-    margin: { t: 30, r: 30, b: 30, l: 30 },
+    xaxis: {
+      
+      titlefont: { color: "#ffffff" },
+      tickfont: { color: "#ffffff" },
+      gridcolor: "#333",
+      zerolinecolor: "#333",
+      linecolor: "#333",
+      color: "white",
+    },
+    yaxis: {
+   
+      titlefont: { color: "#ffffff" },
+      tickfont: { color: "#ffffff" },
+      gridcolor: "#333",
+      zerolinecolor: "#333",
+      linecolor: "#333",
+      color: "white",
+    },
+    margin: { t: 30, r: 0, b: 45, l: 18 },
     plot_bgcolor: "transparent",
     paper_bgcolor: "transparent",
     hovermode: "closest",
@@ -411,6 +515,27 @@ function FunctionInput() {
     plot_bgcolor: "transparent",
     paper_bgcolor: "transparent",
     hovermode: "closest",
+
+    xaxis: {
+      
+      titlefont: { color: "#ffffff" },
+      tickfont: { color: "#ffffff" },
+      gridcolor: "#333",
+      zerolinecolor: "#333",
+      linecolor: "#333",
+      color: "white",
+    },
+    yaxis: {
+   
+      titlefont: { color: "#ffffff" },
+      tickfont: { color: "#ffffff" },
+      gridcolor: "#333",
+      zerolinecolor: "#333",
+      linecolor: "#333",
+      color: "white",
+    },
+
+    
 
     legend: {
       orientation: "h",
@@ -475,12 +600,21 @@ function FunctionInput() {
     setOpenNicknameDialog(false);
   };
 
-  const handleNicknameSubmit = () => {
-    setCookie("nickname", nicknameInput, { path: "/" });
-    setInputed(true);
-    setOpenNicknameDialog(false);
+  const handleNicknameChange = (event) => {
+    setNicknameInput(event.target.value);
+    setNicknameError(""); // Limpar erro ao editar
   };
-
+  const handleNicknameSubmit = () => {
+    if (filter.isProfane(nicknameInput)) {
+      setNicknameError("Por favor, escolha um apelido apropriado.");
+    } else {
+      setCookie("nickname", nicknameInput, { path: "/" });
+      setInputed(true);
+      setOpenNicknameDialog(false);
+      setNicknameError("");
+      setUserNickname(nicknameInput); // Atualiza o estado com o apelido do usuário
+    }
+  };
   const handleClose = () => {
     setOpen(false);
 
@@ -495,7 +629,7 @@ function FunctionInput() {
       const parsedBounds = JSON.parse(bounds);
       const message = {
         type: "perform_optimization",
-        method: "random",
+        method: "share",
         action: "optimize",
         optimize_all: selectedUser[0] === "all",
         users: users.map((user) => user.id),
@@ -505,7 +639,7 @@ function FunctionInput() {
           max_iter: parseInt(maxIter, 10),
           tolerance: 1e-6,
         },
-        result: null,
+        result: ResultInfoPlot,
         optimization_id: 1,
       };
 
@@ -522,62 +656,70 @@ function FunctionInput() {
 
   return (
     <div className="tela_home">
-      <div className="header-home">
-        <div className="logo-container-home">
-          <img
-            src={LogoImage}
-            alt="Logo"
-            style={{ width: "100px", height: "100px", marginLeft: "10%" }}
-          />
-        </div>
+ <div className="header-home">
+    <div className="logo-container-home">
+      <img
+        src={LogoImage}
+        alt="Logo"
+        style={{ width: "100px", height: "100px", marginLeft: "10%" }}
+      />
+    </div>
 
-        <div className="form-container">
-          <form onSubmit={() => {}}>
-            <input
-              type="text"
-              value={functionText}
-              onChange={(e) => setFunctionText(e.target.value)}
-              placeholder="Função objetivo, ex: x^2 + 3*x + 2"
-            />
-            <input
-              type="text"
-              value={bounds}
-              onChange={(e) => setBounds(e.target.value)}
-              placeholder="Limites, ex: [[-10, 10], [-10, 10]]"
-            />
-            <input
-              type="text"
-              value={maxIter}
-              onChange={(e) => setMaxIter(e.target.value)}
-              placeholder="Número máximo de iterações, ex: 100"
-            />
+    <div className="form-container">
+      {userNickname && (
+              <h4 className={classes.userGreeting}>Bem-vindo, {userNickname}!</h4>
+            )}
+      <form onSubmit={() => {}}>
+        <input
+          type="text"
+          value={functionText}
+          onChange={(e) => setFunctionText(e.target.value)}
+          placeholder="Função objetivo, ex: x^2 + 3*x + 2"
+          disabled={modoExpectador} // Desabilita se estiver no modo espectador
+        />
+        <input
+          type="text"
+          value={bounds}
+          onChange={(e) => setBounds(e.target.value)}
+          placeholder="Limites, ex: [[-10, 10], [-10, 10]]"
+          disabled={modoExpectador} // Desabilita se estiver no modo espectador
+        />
+        <input
+          type="text"
+          value={maxIter}
+          onChange={(e) => setMaxIter(e.target.value)}
+          placeholder="Número máximo de iterações, ex: 100"
+          disabled={modoExpectador} // Desabilita se estiver no modo espectador
+        />
 
-            <div className="menu-icon-container">
-              <FontAwesomeIcon
-                icon={isMenuVisible ? faChevronUp : faChevronDown}
-                onClick={toggleMenu}
-                style={{
-                  cursor: "pointer",
-                  position: "relative",
-                  color: "white",
-                }}
-              />
-              <div
-                id="context-menu"
-                className="context-menu"
-                style={{ display: isMenuVisible ? "block" : "none" }}
-              >
-                <button type="button" onClick={handleConsult}>
-                  Consultar
-                </button>
-                <button type="button" onClick={handleShare}>
-                  Compartilhar
-                </button>
-              </div>
+        {!modoExpectador && ( // Esconde se estiver no modo espectador
+          <div className="menu-icon-container">
+            <FontAwesomeIcon
+              icon={isMenuVisible ? faChevronUp : faChevronDown}
+              onClick={toggleMenu}
+              style={{
+                cursor: "pointer",
+                position: "relative",
+                color: "white",
+              }}
+            />
+            <div
+              id="context-menu"
+              className="context-menu"
+              style={{ display: isMenuVisible ? "block" : "none" }}
+            >
+              <button type="button" onClick={handleConsult}>
+                Consultar
+              </button>
+              <button type="button" onClick={handleShare}>
+                Compartilhar
+              </button>
             </div>
-          </form>
-        </div>
-      </div>
+          </div>
+        )}
+      </form>
+    </div>
+  </div>
 
       <Dialog
         open={open}
@@ -615,31 +757,35 @@ function FunctionInput() {
         onClose={handleNicknameDialogClose}
         className={classes.dialog}
       >
-        <DialogTitle className={classes.title}>Digite seu apelido</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="nickname"
-            label="Apelido"
-            type="text"
-            fullWidth
-            value={nicknameInput}
-            onChange={(e) => setNicknameInput(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleNicknameSubmit}
-            className={classes.button}
-            disabled={!nicknameInput}
-          >
-            Confirmar
-          </Button>
-        </DialogActions>
-      </Dialog>
+    <DialogTitle className={classes.title}>Digite seu apelido</DialogTitle>
+    <DialogContent>
+      <TextField
+        autoFocus
+        margin="dense"
+        id="nickname"
+        label="Apelido"
+        type="text"
+        fullWidth
+        value={nicknameInput}
+        onChange={handleNicknameChange}
+      />
+      {nicknameError && (
+        <div style={{ color: 'red', marginTop: '10px' }}>{nicknameError}</div>
+      )}
+    </DialogContent>
+    <DialogActions>
+      <Button
+        onClick={handleNicknameSubmit}
+        className={classes.button}
+        disabled={!nicknameInput}
+      >
+        Confirmar
+      </Button>
+    </DialogActions>
+  </Dialog>
+  
       <div className="content-home">
-        <Grid container spacing={8} sx={{ flexGrow: 1 }}>
+        <Grid container spacing={1} sx={{ flexGrow: 1 }}>
           <Grid sm={12} md={8}>
             {Function3D && (
               <div className="card_secondary card_obtjetive_3d">
@@ -654,7 +800,6 @@ function FunctionInput() {
                           type: "surface",
                           colorscale: gradienteCustomizado,
                           colorbar: {
-                            title: " ", // Título da colorbar
                             titleside: "right",
                             titlefont: {
                               size: 12,
@@ -664,6 +809,7 @@ function FunctionInput() {
                               size: 10,
                               color: "white",
                             },
+                            outlinecolor: "transparent" // Define a cor da borda aqui
                           },
                         },
                       ]}
@@ -682,7 +828,7 @@ function FunctionInput() {
           </Grid>
           <Grid sm={12} md={4}>
             {GradientTrajectory && RandomTrajectory && PointOptimal && (
-              <div className="card card_solution_trajectory">
+              <div className="top_right_card card_solution_trajectory">
                 <AutoSizer style={{ height: 400 }}>
                   {({ width }) => (
                     <Plot
@@ -694,8 +840,8 @@ function FunctionInput() {
                           z: Function3D.z,
                           type: "contour",
                           colorscale: [
-                            [0, "white"],
-                            [1, "white"],
+                            [0, "#ffffff"],
+                            [1, "#ffffff"],
                           ], // Escala transparente para o preenchimento
                           contours: {
                             coloring: "lines", // Mostra apenas as linhas
@@ -710,6 +856,18 @@ function FunctionInput() {
                               width: 6,
                               height: 10, // Aumenta a espessura das linhas para 2 pixels
                             },
+                          },
+                          colorbar: {
+                            titleside: "right",
+                            titlefont: {
+                              size: 12,
+                              color: "white",
+                            },
+                            tickfont: {
+                              size: 10,
+                              color: "white",
+                            },
+                            outlinecolor: "#333" // Define a cor da borda aqui
                           },
                         },
                         // Trajetória do método gradiente
@@ -784,7 +942,7 @@ function FunctionInput() {
 
           <Grid sm={12} md={4}>
             {ConvergenceCurve && (
-              <div className="card card_convergence_curve">
+              <div className="bottom_left_card card_convergence_curve">
                 <AutoSizer style={{ height: 250 }}>
                   {({ width }) => (
                     <Plot
@@ -820,8 +978,8 @@ function FunctionInput() {
             )}
           </Grid>
           <Grid sm={12} md={4}>
-            {FeasibilityRegion && (
-              <div className="card card_feasibility_region">
+            {feasibilityData && (
+              <div className="bottom_left_card card_feasibility_region">
                 <AutoSizer style={{ height: 250 }}>
                   {({ width }) => (
                     <Plot
@@ -849,6 +1007,8 @@ function FunctionInput() {
                               height: 10, // Aumenta a espessura das linhas para 2 pixels
                             },
                           },
+                          showscale: false, // Esconde a barra de cores
+                          
                         },
                         {
                           z: feasibilityData.z,
@@ -859,7 +1019,20 @@ function FunctionInput() {
                             ["0", "transparent"],
                             ["1", "#47c1a7"],
                           ],
-                          showscale: true, // Esconde a barra de cores
+                          colorbar: {
+                            titleside: "right",
+                            titlefont: {
+                              size: 12,
+                              color: "white",
+                            },
+                            tickfont: {
+                              size: 10,
+                              color: "white",
+                            },
+                            outlinecolor: "#333" // Define a cor da borda aqui
+                          },
+                          
+                          showscale: true, 
                         },
                       ]}
                       useResizeHandler
@@ -876,8 +1049,8 @@ function FunctionInput() {
             )}
           </Grid>
           <Grid sm={12} md={4}>
-            {Function3D && (
-              <div className="card card_countors_levels">
+            {feasibilityData && (
+              <div className="bottom_right_card card_countors_levels">
                 <AutoSizer style={{ height: 250 }}>
                   {({ width }) => (
                     <Plot
@@ -888,8 +1061,8 @@ function FunctionInput() {
                           y: Function3D.y,
                           type: "contour",
                           colorscale: [
-                            [0, "#1c1833"],
-                            [1, "#1c1833"],
+                            [0, "black"],
+                            [1, "black"],
                           ], // Escala transparente para o preenchimento
                           contours: {
                             coloring: "lines", // Mostra apenas as linhas
@@ -925,7 +1098,6 @@ function FunctionInput() {
                           colorscale: gradienteCustomizado,
                           showscale: true, // Esconde a barra de cores
                           colorbar: {
-                            title: "Intensidade", // Título da colorbar
                             titleside: "right",
                             titlefont: {
                               size: 12,
@@ -935,6 +1107,7 @@ function FunctionInput() {
                               size: 10,
                               color: "white",
                             },
+                            outlinecolor: "transparent" // Define a cor da borda aqui
                           },
                         },
                       ]}
@@ -956,9 +1129,42 @@ function FunctionInput() {
             )}
           </Grid>
         </Grid>
+        </div>
+        {isCardVisible && (
+      <div className={classes.floatingCard}>
+        <div className={classes.cardTitle}>
+          Usuários conectados:
+          <button
+            className={classes.minimizeButton}
+            onClick={handleMinimizeCard}
+          >
+            -
+          </button>
+        </div>
+        <ul className={classes.userList}>
+          {userList.map((user) => (
+            <li key={user.id} className={classes.userListItem}>
+              {user.nickname}
+            </li>
+          ))}
+        </ul>
       </div>
-    </div>
-  );
+    )}
+    {!isCardVisible && (
+      <div className={classes.floatingCard}>
+        <div className={classes.cardTitle}>
+          Usuários conectados:
+          <button
+            className={classes.minimizeButton}
+            onClick={handleMinimizeCard}
+          >
+            +
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }
 
 export default FunctionInput;

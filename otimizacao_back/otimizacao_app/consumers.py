@@ -111,6 +111,15 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
                 'nickname': self.nickname
             }
             logger.info(f"Usuário {self.nickname} conectado com ID {self.user_id}.")
+             # Enviar mensagem ao grupo sobre o novo usuário
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'user_joined',
+                    'user_id': self.user_id,
+                    'nickname': self.nickname
+                }
+            )
             await self.send_json({
                 'type': 'authenticated',
                 'id': self.user_id,
@@ -131,10 +140,13 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
             logger.warning(f"Ação desconhecida recebida: {action}")
 
     async def perform_optimization(self, content):
-        type = content['type']
-        method = content['method']
-        users = content['users']
-        data = content['data']
+        type = content.get('type', '')
+        action = content.get('action', '')
+        method = content.get('method', '')
+        users = content.get('users', [])
+        data = content.get('data', {})
+        result = content.get('result', '')
+        optimize_all = content.get('optimize_all', False)
         logger.info(f"Iniciando otimização com método: {method}, dados: {data}")
         
         from .optimization import method_random_and_method_gradient
@@ -143,25 +155,33 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
             result = await database_sync_to_async(method_random_and_method_gradient)(data)
       
         else:
-            result = {'error': 'Método de otimização desconhecido'}
+           
             logger.error(f"Método de otimização desconhecido: {method}")
 
         response = {
             'type': type,
+            'action': action,
+            'optimize_all': optimize_all,
             'method': method,
             'data': data,
-            'result': result
+            'result': result,
         }
         
         logger.info(f"Enviando resultado da otimização: {response}")
-        if content['optimize_all']:
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'perform_optimization_update',  # Este é o método handler no consumer que vai tratar a mensagem
-                    'message': response
-                }
-            )
+        if optimize_all:
+             # Obter o canal do remetente
+            sender_channel_name = self.channel_name
+        
+        # Iterar sobre os membros do grupo e enviar a mensagem, exceto para o remetente
+            for user_channel, user_info in connected_users.items():
+                if user_channel != sender_channel_name:
+                    await self.channel_layer.send(
+                        user_channel,
+                        {
+                            'type': 'perform_optimization_update',
+                            'message': response
+                        }
+                    )
         elif len(users) == 0:
             await self.send_json(response)
         else:
@@ -183,8 +203,50 @@ class OtimizeConsumer(AsyncJsonWebsocketConsumer):
         logger.info(f"Repassando mensagem ao grupo: {message}")
         await self.send_json(message)
 
-        
+    async def user_joined(self, event):
+        user_id = event['user_id']
+        nickname = event['nickname']
+        logger.info(f"Usuário {nickname} (ID: {user_id}) entrou.")
+        await self.send_json({
+            'type': 'user_joined',
+            'user_id': user_id,
+            'nickname': nickname
+        })   
         
     async def send_json(self, content, close=False):
         logger.info(f"Enviando mensagem: {content}")
         await super().send_json(content, close=close)
+
+    def getStatusCodeString(code):
+
+        specificStatusCodeMappings = {
+            '1000': 'Normal Closure',
+            '1001': 'Going Away',
+            '1002': 'Protocol Error',
+            '1003': 'Unsupported Data',
+            '1004': '(For future)',
+            '1005': 'No Status Received',
+            '1006': 'Abnormal Closure',
+            '1007': 'Invalid frame payload data',
+            '1008': 'Policy Violation',
+            '1009': 'Message too big',
+            '1010': 'Missing Extension',
+            '1011': 'Internal Error',
+            '1012': 'Service Restart',
+            '1013': 'Try Again Later',
+            '1014': 'Bad Gateway',
+            '1015': 'TLS Handshake'
+        }
+        if code is None:
+            return "Código de status desconhecido"
+        if 0 <= code <= 999:
+            return '(Unused)'
+        elif 1016 <= code <= 1999:
+            return '(For WebSocket standard)'
+        elif 2000 <= code <= 2999:
+            return '(For WebSocket extensions)'
+        elif 3000 <= code <= 3999:
+            return '(For libraries and frameworks)'
+        elif 4000 <= code <= 4999:
+            return '(For applications)'
+        return specificStatusCodeMappings.get(code, '(Unknown)')

@@ -37,7 +37,7 @@ SECRET_KEY = 'django-insecure-#n_l#2g@u$)@p949z$xprfvu!h-=)nlfh3&2r72)cu-20)!muz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [IP_ADDRESS]
+
 
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
@@ -72,7 +72,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [(REDIS_HOST, 6379)],
+            "hosts": [('127.0.0.1', 6379)],
             # "hosts": [('127.0.0.1', 6379)],
         },
     },
@@ -192,7 +192,7 @@ DATABASES = {
         'NAME': 'sistema_cadastro',
         'USER': 'root',
         'PASSWORD': '123456',
-        'HOST': MYSQL_HOST,
+        'HOST': '10.100.0.23',
         'PORT': '3306',
     }
 }
