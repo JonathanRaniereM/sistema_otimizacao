@@ -276,7 +276,7 @@ function FunctionInput() {
     }
 
     const newWs = new WebSocket(
-      `ws://10.100.0.23:8000/ws/manage_otimize/?nickname=${nickname}`
+      `ws://192.168.254.82:8000/ws/manage_otimize/?nickname=${nickname}`
     );
 
     newWs.onmessage = (event) => {
